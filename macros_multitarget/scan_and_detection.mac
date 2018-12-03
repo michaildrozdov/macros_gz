@@ -1,0 +1,741 @@
+clear_variables();
+//clearTrace = 1;
+//angleStart = -20;
+//angleEnd = 20;
+//rangeStart = 20;
+//rangeEnd =35;
+angleStep = (angleEnd - angleStart)/4;
+atAngle = angleStart;//deg
+distanceAt0ns = 15;//m
+threshold = 500;
+anglesThreshold = 5;
+maxNumberOfMeasurements = 1000;
+maxVel = 2.5;//m/s
+distanceWindowFalloffCoef = 2;
+memoryCounts = 5;
+changingTimeWindow = 1;
+parametersNumber = 6;
+
+//saveTo = "C:\shanghai_misha\field_signals\test2.sig";
+//saveFile = 0;
+pulseDuration = 2;
+falloffDuration = 0.5;
+arrayD = 10;
+c = 0.3;
+d = 0.12;
+maxTheoreticalDelay = d/c + 0.1;
+
+timeStart = 275 - arrayD/c;
+coarseDel = 4*floor((timeStart + 2*sqrt(rangeStart*rangeStart + arrayD*arrayD/4)/c - 5)/4);
+set_coarse_delay(coarseDel);
+
+timeBase = 2*sqrt(rangeEnd*rangeEnd + arrayD*arrayD/4)/c - 2*sqrt(rangeStart*rangeStart + arrayD*arrayD/4)/c + 10;
+if (timeBase > 100)
+{
+	  timeBase = 100;
+}
+set_time_base(timeBase/10);
+
+params1 = signal(1,1,false);
+params2 = signal(1,1,false);
+params3 = signal(1,1,false);
+params4 = signal(1,1,false);
+params5 = signal(1,1,false);
+params6 = signal(1,1,false);
+params1 = angleStart;
+params2 = angleEnd;
+params3 = angleStep;
+params4 = distanceAt0ns;
+params5 = 1;
+params6 = coarseDel;
+if (saveFile > 0)
+{
+	  sig_add(saveTo,params1);
+	  sig_add(saveTo,params2);
+	  sig_add(saveTo,params3);
+	  sig_add(saveTo,params4);
+	  sig_add(saveTo,params5);
+	  sig_add(saveTo,params6);
+	  sig_setlabel(saveTo,0,"start angle");
+	  sig_setlabel(saveTo,1,"end angle");
+	  sig_setlabel(saveTo,2,"angleStep");
+	  sig_setlabel(saveTo,3,"distance at start of window");
+	  sig_setlabel(saveTo,4,"three signals at angle");
+	  sig_setlabel(saveTo,5,"coarse delay");
+}
+
+angles = signal(1,maxNumberOfMeasurements,false);
+amplitudes = signal(1,maxNumberOfMeasurements,false);
+
+antennaPos = signal(1,8,false);
+antennaPos[0] = 7*d/2;
+antennaPos[1] = 5*d/2;
+antennaPos[2] = 3*d/2;
+antennaPos[3] = d/2;
+antennaPos[4] = -d/2;
+antennaPos[5] = -3*d/2;
+antennaPos[6] = -5*d/2;
+antennaPos[7] = -7*d/2;
+
+
+outAntennaPos = signal(1,4,false);
+outAntennaPos[0] = -3*d/2;
+outAntennaPos[1] = -d/2;
+outAntennaPos[2] = d/2;
+outAntennaPos[3] = 3*d/2;
+
+
+c = 0.3;//m/s
+
+lineDelays = signal(1,4,false);
+if (atAngle > 0)
+{
+	  for (ia = 0; ia < 4; ia = ia + 1)
+	  {
+		   lineDelays[ia] = 1000*(outputDelays[ia] - ia*d*sin(atAngle*pi()/180)/c);
+	  }
+}
+else
+{
+	  for (ia = 0; ia < 4; ia = ia + 1)
+	  {
+		   lineDelays[ia] = 1000*(outputDelays[ia] - (ia - 3)*d*sin(atAngle*pi()/180)/c);
+	  }
+}
+pos = 0;
+
+for (ia = 0; ia < 4; ia = ia + 1)
+{
+	  delay_line_set_time(ia + 1,lineDelays[ia]);
+}
+
+
+acquire(1,prev1);
+N = count(prev1);
+T = window(prev1);
+powersignal = matrix(8,N);
+prevSignal = matrix(8,N);
+currentSignal = matrix(8,N);
+firstSignal = matrix(8,N);
+additionalSignal = matrix(8,N);
+differenceSignal = matrix(8,N);
+
+if (changingTimeWindow > 0)
+{
+	  maxDistance = 100;
+}
+else
+{
+	  maxDistance = rangeEnd;
+}
+
+maxAngleDisplace = abs(angleStart);
+if (abs(maxAngleDisplace) < abs(angleEnd))
+{
+	  maxAngleDisplace = abs(angleEnd);
+}
+
+minDistance = rangeStart*cos(maxAngleDisplace*pi()/180);
+maxDisplace = maxDistance*sin(maxAngleDisplace*pi()/180);
+
+//maxDistance = sqrt(((coarseDel + 100 - timeStart)/2*c)*((coarseDel + 100 - timeStart)/2*c) - arrayD*arrayD/4);
+maxDisplace = maxDistance*sin(maxAngleDisplace*pi()/180);
+
+longDifference = matrix(8,8*N);
+longSignal = signal(T,8*N,false);
+longSpectrumConst = fft(longSignal);
+longSpectrumConst = 0;
+
+sp = fft(prev1);
+divisionStep = (maxDistance + 20 - minDistance)/10;
+if ((divisionStep > 0.5) and (divisionStep <= 1.4))
+{
+	  divisionStep = 1;
+}
+if ((divisionStep > 1.4) and (divisionStep <= 3))
+{
+	  divisionStep = 2;
+}
+if ((divisionStep > 3) and (divisionStep <= 6.5))
+{
+	  divisionStep = 5;
+}
+if ((divisionStep > 6.5) and (divisionStep <= 14))
+{
+	  divisionStep = 10;
+}
+if ((divisionStep > 14) and (divisionStep <= 50))
+{
+	  divisionStep = 20;
+}
+antennasToDisplay = signal(1,12,false);
+antennasToDisplay[0] = maxDisplace+20;
+antennasToDisplay[1] = maxDisplace+20;
+antennasToDisplay[2] = maxDisplace+20;
+antennasToDisplay[3] = maxDisplace+20;
+antennasToDisplay[4] = maxDisplace+20;
+antennasToDisplay[5] = maxDisplace+20;
+antennasToDisplay[6] = maxDisplace+20;
+antennasToDisplay[7] = maxDisplace+20;
+antennasToDisplay[8] = maxDisplace+20+arrayD;
+antennasToDisplay[9] = maxDisplace+20+arrayD;
+antennasToDisplay[10] = maxDisplace+20+arrayD;
+antennasToDisplay[11] = maxDisplace+20+arrayD;
+if (clearTrace == 1)
+{
+	xyclear();
+}
+maxDistance = 100;
+minDistance = 0;
+xyinit(-maxDisplace-20,minDistance,maxDisplace+20+arrayD,maxDistance+20,antennasToDisplay,divisionStep,2);
+if (abs(angleStart - angleEnd) > 0.01)
+{
+	  //xyaddlines(arrayD,0,arrayD - (maxDistance + 20)*tan(angleStart*pi()/180), maxDistance+20,arrayD,0,arrayD - (maxDistance+20)*tan(angleEnd*pi()/180), maxDistance+20);
+}
+xyclear();
+pointsPerNs = N/T;
+nsPerPoint = T/N;
+delayOf20ns = floor(20*N/T);
+slidingWindowN = ceil(pulseDuration*pointsPerNs);
+slidingWindow = signal(pulseDuration, slidingWindowN, false);
+
+meanSig = slidingWindow;
+signalPart = signal(pulseDuration,slidingWindowN,false);
+
+start1point = 0;
+start2point = floor(falloffDuration*slidingWindowN/pulseDuration);
+end1point = floor((pulseDuration - falloffDuration)*slidingWindowN/pulseDuration);
+end2point = slidingWindowN-1;
+
+slidingWindow = 0;
+for (ia = start1point; ia < start2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(-pi()/2 + pi() *(ia - start1point)/(start2point - start1point)))/2;
+}
+for (ia = start2point; ia < end1point; ia = ia + 1)
+{
+	  slidingWindow[ia] = 1;
+}
+for (ia = end1point; ia < end2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - end1point)/(end2point - end1point)))/2;
+}
+
+detected = 0;
+sinceDetected = 20;
+disp = parametersNumber;
+prevAngle = 0;
+meanSignal = matrix(8,N);
+
+constSignal = prev1;
+constSignal = 0;
+for (ia = 0; ia < 8; ia = ia + 1)
+{
+	  set_matrix_row(meanSignal, ia, constSignal);
+}
+
+counter = 1;
+meanCoef = 0.6;
+
+thresholds = signal(1,8,false);
+firstOccurance = signal(1,8,false);
+lastOccurance = signal(1,8,false);
+hadMaximum = signal(1,8,false);
+
+weights = matrix(8,8);
+delays = matrix(8,8);
+weights = 0;
+prevDistance = 0;
+prevAngle = 0;
+deltaT = 2;
+emptySignal = signal(1,3,false);
+for (ind1 = 0; ind1 < maxNumberOfMeasurements; ind1 = ind1 + 1)
+{
+
+	  timeBefore = time();
+	  curCoarseDel = get_coarse_delay();
+	  if (curCoarseDel != coarseDel)
+	  {
+		    counter = 1;
+		    emptySignal = curCoarseDel;
+		    if (saveFile > 0)
+		    {
+			      sig_add(saveTo,emptySignal);
+		    }
+	  }
+	  angles[ind1] = atAngle;
+	  
+	  if (atAngle > 0)
+	  {
+		    for (ia = 0; ia < 4; ia = ia + 1)
+		    {
+			      lineDelays[ia] = 1000*(outputDelays[ia] - ia*d*sin(atAngle*pi()/180)/c);
+		    }
+	  }
+	  else
+	  {
+		    for (ia = 0; ia < 4; ia = ia + 1)
+		    {
+			      lineDelays[ia] = 1000*(outputDelays[ia] - (ia - 3)*d*sin(atAngle*pi()/180)/c);
+		    }
+	  }
+
+	  pos = 0;
+
+	  for (ia = 0; ia < 4; ia = ia + 1)
+	  {
+		    delay_line_set_time(ia + 1,lineDelays[ia]);
+	  }
+
+	  acquire(1,prev1,2,prev2,3,prev3,4,prev4,5,prev5,6,prev6,7,prev7,8,prev8);
+
+	  if (saveFile > 0)
+	  {
+		    sig_add(saveTo,prev1);
+		    sig_add(saveTo,prev2);
+		    sig_add(saveTo,prev3);
+		    sig_add(saveTo,prev4);
+		    sig_add(saveTo,prev5);
+		    sig_add(saveTo,prev6);
+		    sig_add(saveTo,prev7);
+		    sig_add(saveTo,prev8);
+	  }
+
+	  acquire(1,sig1,2,sig2,3,sig3,4,sig4,5,sig5,6,sig6,7,sig7,8,sig8);
+	  if (saveFile > 0)
+	  {
+		    sig_add(saveTo,sig1);
+		    sig_add(saveTo,sig2);
+		    sig_add(saveTo,sig3);
+		    sig_add(saveTo,sig4);
+		    sig_add(saveTo,sig5);
+		    sig_add(saveTo,sig6);
+		    sig_add(saveTo,sig7);
+		    sig_add(saveTo,sig8);
+	  }
+	  
+
+	  set_matrix_row(prevSignal, 0, prev1);
+	  set_matrix_row(prevSignal, 1, prev2);
+	  set_matrix_row(prevSignal, 2, prev3);
+	  set_matrix_row(prevSignal, 3, prev4);
+	  set_matrix_row(prevSignal, 4, prev5);
+	  set_matrix_row(prevSignal, 5, prev6);
+	  set_matrix_row(prevSignal, 6, prev7);
+	  set_matrix_row(prevSignal, 7, prev8);
+	  
+	  set_matrix_row(currentSignal, 0, sig1);
+	  set_matrix_row(currentSignal, 1, sig2);
+	  set_matrix_row(currentSignal, 2, sig3);
+	  set_matrix_row(currentSignal, 3, sig4);
+	  set_matrix_row(currentSignal, 4, sig5);
+	  set_matrix_row(currentSignal, 5, sig6);
+	  set_matrix_row(currentSignal, 6, sig7);
+	  set_matrix_row(currentSignal, 7, sig8);
+	  
+	  if (counter == 1)
+	  {
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      set_matrix_row(meanSignal, ka, get_matrix_row(prevSignal,ka));
+			      set_matrix_row(FirstSignal, ka, get_matrix_row(prevSignal,ka));
+		    }
+		    
+		    counter = counter + 1;
+		    //goto next;
+	  }
+	  else
+	  {
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      set_matrix_row(meanSignal, ka, (1 - meanCoef)*get_matrix_row(prevSignal,ka) + meanCoef*get_matrix_row(meanSignal,ka));
+		    }
+	  }
+
+	  ffilt1 = 4;
+	  ffilt2 = 4.5;
+	  
+	  for (ka = 0; ka < 8; ka = ka + 1)
+	  {
+		    cur = get_matrix_row(currentSignal,ka);
+		    mea = get_matrix_row(meanSignal,ka);
+		    set_label(cur,T,"nS","mV");
+		    set_label(mea,T,"nS","mV");
+		    set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6));
+		    tempNormal = get_matrix_row(differenceSignal, ka);
+		    set_label(tempNormal,T,"nS","mV");
+		    sp = fft(tempNormal);
+		    longSpectrumConst = 0;
+		    insert(sp,0,N/2-2,longSpectrumConst,0);
+		    
+		    set_matrix_row(longDifference, ka, ifft(longSpectrumConst));
+	  }
+
+
+	  for (point = 0; point < N - slidingWindowN; point = point + 1)
+	  {
+		    
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      tempNormal = get_matrix_row(differenceSignal, ka);
+			      set_label(tempNormal,T,"nS","mV");
+			      insert(tempNormal,point,point + slidingWindowN - 1, signalPart,0);
+			      signalPart = signalPart*slidingWindow;
+			      meanVal = mean(signalPart);
+			      meanSig = meanVal;
+			      
+			      set_matrix(powersignal, ka, point, sum((signalPart - meanSig)*(signalPart - meanSig)));
+		    }
+		    
+	  }
+
+	    
+	  pos = 0;
+	  for (ka = 0; ka < 8; ka = ka + 1)
+	  {
+		    meanVal = mean(get_matrix_row(powersignal,ka));
+		    maxVal = max(get_matrix_row(powersignal,ka), pos);
+		    thresholds[ka] = (maxVal - meanVal)/2;
+		    firstOccurance[ka] = -1;
+		    lastOccurance[ka] = -1;
+		    hadMaximum[ka] = 0;
+	  }
+	  
+	r2 = get_matrix_row(differenceSignal, 0);
+	  r3 = get_matrix_row(powersignal, 1);
+	  r4 = get_matrix_row(powersignal, 2);
+	  r5 = get_matrix_row(powersignal, 3);
+	  r6 = get_matrix_row(powersignal, 4);
+	  r7 = get_matrix_row(powersignal, 5);
+	  r8 = get_matrix_row(powersignal, 6);
+	  r9 = get_matrix_row(powersignal, 7);
+	  
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      if (get_matrix(powersignal,ka,ia) > thresholds[ka])
+			      {
+					set_matrix(powersignal, ka, ia, get_matrix(powersignal,ka,ia) - thresholds[ka]);
+					lastOccurance[ka] = ia;
+					if (firstOccurance[ka] < 0)
+					{
+						  firstOccurance[ka] = ia;
+					}
+			      }
+			      else
+			      {
+					set_matrix(powersignal, ka, ia, 0);
+			      }
+		    }
+	  }
+		    
+	  
+		  
+	  weights = 0;
+	  sumOfWeights = 0;
+	  weightenedSum = 0;
+	  if (detected == 1)
+		{
+			  angleWindow = longSignal;
+			  angleWindow = 0;
+			  maxAngleChange = acos((2*prevDistance*prevDistance - maxVel*maxVel)/2/prevDistance/prevDistance);
+			  maxDurChange = d*sin(maxAngleChange)/c;
+
+			  falloffPoint = deltaT*maxDurChange*pointsPerNs*8;
+		      
+			  for (ia = 0; ia < 2*falloffPoint; ia = ia + 1)
+			  {
+				angleWindow[ia] = 1;
+				ind = 8*N-1-ia;
+				angleWindow[ind] = 1;
+			  }
+			  for (ia = 2*falloffPoint; ia < 5*falloffPoint; ia = ia + 1)
+			  {
+				angleWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - 2*falloffPoint)/(3*falloffPoint)))/2;
+				ind = 8*N-1-ia;
+				angleWindow[ind] = (1 + sin(pi()/2 + pi() *(ia - 2*falloffPoint)/(3*falloffPoint)))/2;
+			  }
+		      
+			  distanceWindow = prev1;
+			  distanceWindow = 0;
+			  maxRangeChange = floor(2*maxVel/c*pointsPerNs)*deltaT/2;
+		      
+			  for (ia = prevPos; ia < prevPos + maxRangeChange; ia = ia + 1)
+			  {
+				if((ia < N) and (ia >= 0))
+				{
+					  distanceWindow[ia] = 1;
+				}
+				ind = 2*prevPos-ia;
+				if((ind < N) and (ind >= 0))
+				{
+					  distanceWindow[ind] = 1;
+				}
+			  }
+			  upperLimit = floor(distanceWindowFalloffCoef*maxRangeChange);
+			  for (ia = prevPos + maxRangeChange; ia < prevPos + maxRangeChange + upperLimit; ia = ia + 1)
+			  {
+				if((ia < N) and (ia >= 0))
+				{
+					  distanceWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - maxRangeChange - prevPos)/upperLimit))/2;
+				}
+				ind = 2*prevPos -ia;
+				if((ind < N) and (ind >= 0))
+				{
+					  distanceWindow[ind] = (1 + sin(pi()/2 + pi() *(ia - maxRangeChange - prevPos)/upperLimit))/2;
+				}
+			  }
+		}
+		else
+		{
+			  if (sinceDetected < memoryCounts)
+			  {
+				angleWindow = longSignal;
+				angleWindow = 0;
+				maxAngleChange = acos((2*prevDistance*prevDistance - maxVel*maxVel)/2/prevDistance/prevDistance);
+				maxDurChange = d*sin(maxAngleChange)/c;
+
+				falloffPoint = deltaT*sinceDetected*maxDurChange*N*8/T;
+				
+				for (ia = 0; ia < 2*falloffPoint; ia = ia + 1)
+				{
+					  angleWindow[ia] = 1;
+					  ind = 8*N-1-ia;
+					  angleWindow[ind] = 1;
+				}
+				for (ia = 2*falloffPoint; ia < 5*falloffPoint; ia = ia + 1)
+				{
+					  angleWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - 2*falloffPoint)/(3*falloffPoint)))/2;
+					  ind = 8*N-1-ia;
+					  angleWindow[ind] = (1 + sin(pi()/2 + pi() *(ia - 2*falloffPoint)/(3*falloffPoint)))/2;
+				}
+				
+				distanceWindow = prev1;
+				distanceWindow = 0;
+				maxRangeChange = floor(2*maxVel*sinceDetected/c*N/T)*deltaT/2;
+		      
+				for (ia = prevPos; ia < prevPos + maxRangeChange; ia = ia + 1)
+				{
+					  if((ia < N) and (ia >= 0))
+					  {
+							distanceWindow[ia] = 1;
+					  }
+					  ind = 2*prevPos-ia;
+					  if((ind < N) and (ind >= 0))
+					  {
+							distanceWindow[ind] = 1;
+					  }
+				}
+				upperLimit = floor(distanceWindowFalloffCoef*maxRangeChange);
+				for (ia = prevPos + maxRangeChange; ia < prevPos + maxRangeChange + upperLimit; ia = ia + 1)
+				{
+					  if((ia < N) and (ia >= 0))
+					  {
+							distanceWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - maxRangeChange - prevPos)/upperLimit))/2;
+					  }
+					  ind = 2*prevPos -ia;
+					  if((ind < N) and (ind >= 0))
+					  {
+							distanceWindow[ind] = (1 + sin(pi()/2 + pi() *(ia - maxRangeChange - prevPos)/upperLimit))/2;
+					  }
+				}
+			  }
+		}
+		
+	  for (ka = 0; ka < 8; ka = ka + 1)
+	  {
+		    for(la = 0; la < 8; la = la + 1)
+		    {
+			      if (ka >= la)
+			      {
+					goto continue1;
+			      }
+			      if (lastOccurance[ka] - firstOccurance[ka] > delayOf20ns)
+			      {
+					goto continue1;
+			      }
+			      if (lastOccurance[la] - firstOccurance[la] > delayOf20ns)
+			      {
+					goto continue1;
+			      }
+			      if (abs(firstOccurance[ka] - firstOccurance[la])*nsPerPoint > maxTheoreticalDelay)
+			      {
+					goto continue1;
+			      }
+			      longsig1 = get_matrix_row(longDifference,ka);
+			      longsig2 = get_matrix_row(longDifference,la);
+			      set_label(longsig1,T,"nS","mV");
+			      set_label(longsig2,T,"nS","mV");
+			      if (detected == 1)
+				{
+					  pushBy = (la - ka)*d*sin(prevAngle*pi()/180)/c*8*pointsPerNs;
+					  (newAngleWindow) = push2(angleWindow,pushBy);
+					  conv = ifft(fft(longsig1)*conj(fft(longsig2)))*newAngleWindow;
+				}
+				else
+				{
+					  if (sinceDetected < memoryCounts)
+					  {
+							pushBy = (la - ka)*d*sin(prevAngle*pi()/180)/c*8*pointsPerNs;
+							(newAngleWindow) = push2(angleWindow,pushBy);
+							conv = ifft(fft(longsig1)*conj(fft(longsig2)))*newAngleWindow;
+					  }
+					  else
+					  {
+							conv = ifft(fft(longsig1)*conj(fft(longsig2)));
+					  }
+				}
+				
+			      val = max(conv,pos);
+			      if (pos < 4*N)
+			      {
+					displace = -pos;
+			      }
+			      else
+			      {
+					displace = 8*N - pos;
+			      }
+					
+			      if (displace*c*nsPerPoint/d/8/(ka - la) >= 1)
+			      {
+					goto continue1;
+			      }
+			      set_matrix(delays,la,ka,displace/8/abs(ka - la));
+			      maxVal1 = max(get_matrix_row(powersignal,ka), pos);
+			      maxVal2 = max(get_matrix_row(powersignal,la), pos);
+			      sumOfWeights = sumOfWeights + maxVal1*maxVal2;
+			      weightenedSum = weightenedSum + maxVal1*maxVal2*displace/8/abs(ka - la);
+			      continue1:
+		    }
+	  }
+		    
+
+	  angle = 0;
+		    
+	  r1 = prev1;
+	  r1 = 0;
+		if (sumOfWeights > 0)
+		{
+			  displace = weightenedSum/sumOfWeights;
+			  if (displace*c*nsPerPoint/d < 1)
+			  {
+				angle = 180/pi()*asin(displace*c*nsPerPoint/d);
+				for (ka = 1; ka < 8; ka = ka + 1)
+				    {
+					powersignal1 = get_matrix_row(powersignal,ka);
+					varr = displace*ka;
+					(powersignal1) = push2(powersignal1,varr);
+					if (detected == 1)
+					{
+						  powerSignal1 = powerSignal1*distanceWindow;
+					}
+					else
+					{
+						  if (sinceDetected < memoryCounts)
+						  {
+							    powerSignal1 = powerSignal1*distanceWindow;
+						  }
+					}
+					set_matrix_row(powersignal,ka,powersignal1);
+					r1 = r1 + powersignal1;
+
+				    }
+			  }
+			  
+			  
+		      
+			  prevAngle = angle;
+		}
+		else
+		{
+			  angle = prevAngle;
+			  for (ka = 1; ka < 8; ka = ka + 1)
+				    {
+					powersignal1 = get_matrix_row(powersignal,ka);
+					if (detected == 1)
+					{
+						  powerSignal1 = powerSignal1*distanceWindow;
+					}
+					else
+					{
+						  if (sinceDetected < memoryCounts)
+						  {
+							    powerSignal1 = powerSignal1*distanceWindow;
+						  }
+					}
+					set_matrix_row(powersignal,ka,powersignal1);
+					r1 = r1 + powersignal1;
+
+				    }
+		}
+	  pos = 0;
+	  val = max(r1,pos);
+	  
+	  thresholdVal = val/2;
+	    for (ti = pos; ti >= 0; ti = ti - 1)
+	    {
+		      if (r1[ti] < thresholdVal)
+		      {
+				goto found_position;
+		      }
+	    }
+	    found_position:
+		    
+	  if (val > threshold)
+	  {
+		    const = (curCoarseDel + pos*nsPerPoint - timeStart)*c;
+		    alpha = (90-angle)*pi()/180;
+		    b = (arrayD*arrayD + const*const - 2*arrayD*const*cos(alpha))/(2*const - 2*arrayD*cos(alpha));
+		    aa = const -b;
+		    x = aa*sin(angle*pi()/180);
+		    y = aa*cos(angle*pi()/180);
+		    out(x);
+		    out(y);
+		    xyplot(x,y);
+		    detected = 1;
+		      sinceDetected = 0;
+		      prevDistance = aa;
+		      prevPos = pos;
+		      prevAngle = angle;
+	  }
+	  else
+	  {
+		    detected = 0;
+		    sinceDetected = sinceDetected + 1;
+	  }
+	  
+	  amplitudes[ind1] = val;
+	  if (detected == 1)
+	  {
+		    atAngle = 90 - 180*atan(divi(tan((90 + angle)*pi()/180),-1 + divi(arrayD,b*cos((90 + angle)*pi()/180))))/pi();
+		    if (atAngle > 90)
+		    {
+			      atAngle = -90 -180*atan(divi(tan((90 + angle)*pi()/180),-1 + divi(arrayD,b*cos((90 + angle)*pi()/180))))/pi();
+		    }
+		    if (changingTimeWindow > 0)
+		    {
+				//value = curCoarseDel + 4*floor((pos*nsPerPoint - timeBase/2)/4);
+			      set_coarse_delay(curCoarseDel + 4*floor((pos*nsPerPoint - timeBase/2)/4));
+				//set_coarse_delay(400);
+			      prevPos = pos + 4*floor((pos*nsPerPoint - timeBase/2)/4);
+		    }
+		    out(detected);
+		    out(atAngle);
+	  }
+	  else
+	  {
+		    if (sinceDetected > memoryCounts)
+		    {
+			      atAngle = atAngle + angleStep;
+			      if (atAngle > angleEnd)
+			      {
+					atAngle = angleStart;
+			      }
+		    }
+	  }
+	  next:
+	  timeAfter = time();
+	  deltaT = (timeAfter-timeBefore)/1000;
+	  //out(deltaT);
+}

@@ -1,0 +1,199 @@
+
+clear_variables();
+
+calibrationCoarseDelay = 268;
+calibrationFineDelay = 0;
+timeWindow = 3;
+arrayD = 12;
+threshold = 150;
+locateMax = 1;
+
+focusOn = 3000;
+antennasTimeStep = 0.4;
+
+currentCoarseDelay = get_coarse_delay();
+currentFineDelay = get_fine_delay();
+currentTimeBase = get_time_base();
+
+set_coarse_delay(calibrationCoarseDelay);
+set_fine_delay(calibrationFineDelay);
+set_time_base(timeWindow);
+set_acquire_points(4096);
+
+delay_line_set_time(1,focusOn);
+delay_line_set_time(2,10000);
+delay_line_set_time(3,10000);
+delay_line_set_time(4,10000);
+
+acquire(1, genSig1);
+r7 = genSig1;
+
+N= count(genSig1);
+T = window(genSig1);
+
+found1 = 0;
+prevpoint1 = 0;
+for (index = 0; index < N; index = index + 1)
+{
+
+	  if (found1 == 1)
+	  {
+		    if (abs(genSig1[index]) > prevpoint1)
+		    {
+			      goto mark1;
+		    }
+	  }
+	  if (abs(genSig1[index]) > threshold) 
+	  {
+		    if (locateMax > 0)
+		    {
+			      found1 = 1;
+		    }
+		    goto mark1;
+		    
+	  }
+	  prevpoint1 = abs(genSig1[index]);
+	  
+}
+mark1:
+	  
+delay1 = focusOn;
+posmax = index;
+out(posmax);
+
+
+delay_line_set_time(1,10000);
+delay_line_set_time(2,focusOn);
+
+acquire(1, genSig2);
+
+r8 = genSig2;
+found2 = 0;
+prevpoint2 = 0;
+for (index = 0; index < N; index = index + 1)
+{
+
+	  if (found2 == 1)
+	  {
+		    if (abs(genSig2[index]) > prevpoint2)
+		    {
+			      goto mark2;
+		    }
+	  }
+	  if (abs(genSig2[index]) > threshold) 
+	  {
+		    if (locateMax > 0)
+		    {
+			      found2 = 1;
+		    }
+		    goto mark2;
+		    
+	  }
+	  prevpoint2 = abs(genSig2[index]);
+	  
+}
+mark2:
+	  
+pos = index;
+out(pos);
+
+delay2 = focusOn - (pos-posmax)*T/N*1000 + antennasTimeStep*1000;
+
+delay_line_set_time(2,10000);
+delay_line_set_time(3,focusOn);
+
+acquire(1, genSig3);
+
+r9 = genSig3;
+found3 = 0;
+prevpoint3 = 0;
+for (index = 0; index < N; index = index + 1)
+{
+
+	  if (found3 == 1)
+	  {
+		    if (abs(genSig3[index]) > prevpoint3)
+		    {
+			      goto mark3;
+		    }
+	  }
+	  if (abs(genSig3[index]) > threshold) 
+	  {
+		    if (locateMax > 0)
+		    {
+			      found3 = 1;
+		    }
+		    goto mark3;
+		    
+	  }
+	  prevpoint3 = abs(genSig3[index]);
+	  
+}
+mark3:
+
+pos = index;
+out(pos);
+delay3 = focusOn - (pos - posmax)*T/N*1000 + antennasTimeStep*2*1000;
+
+
+delay_line_set_time(3,10000);
+delay_line_set_time(4,focusOn);
+
+acquire(1, genSig4);
+r10 = genSig4;
+
+found4 = 0;
+prevpoint4 = 0;
+for (index = 0; index < N; index = index + 1)
+{
+
+	  if (found4 == 1)
+	  {
+		    if (abs(genSig4[index]) > prevpoint4)
+		    {
+			      goto mark4;
+		    }
+	  }
+	  if (abs(genSig4[index]) > threshold) 
+	  {
+		    if (locateMax > 0)
+		    {
+			      found4 = 1;
+		    }
+		    goto mark4;
+		    
+	  }
+	  prevpoint4 = abs(genSig4[index]);
+	  
+}
+mark4:
+
+pos = index;
+out(pos);
+delay4 = focusOn - (pos-posmax)*T/N*1000 + antennasTimeStep*3*1000;
+
+out(delay1);
+out(delay2);
+out(delay3);
+out(delay4);
+
+
+
+
+outputDelays = signal(1,4,false);
+outputDelays[0] = delay1/1000;
+outputDelays[1] = delay2/1000;
+outputDelays[2] = delay3/1000;
+outputDelays[3] = delay4/1000;
+
+
+delay_line_set_time(1,delay1);
+delay_line_set_time(2,delay2);
+delay_line_set_time(3,delay3);
+delay_line_set_time(4,delay4);
+
+set_coarse_delay(currentCoarseDelay);
+set_fine_delay(currentFineDelay);
+set_time_base(currentTimeBase);
+
+set_acquire_points(1024);

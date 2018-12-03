@@ -1,0 +1,221 @@
+clear_variables();
+NA=10;
+threshold = 100;
+maxFreq = 18;
+minFreq = 2;
+numOfTests = 10;
+withPause = true;
+calibrationInMemory = true;
+backgroundMeasurement = true;
+N = count(ch1);
+mt = matrix(numOfTests,N/2+1);
+path = "C:\Attestacija_2018\data.sig";
+if (calibrationInMemory)
+{
+	  minFreqPoint = minFreq*T;
+	  maxFreqPoint = maxFreq*T;
+}
+else
+{
+	  acquire(1,b,2,base);
+	  N=count(b);
+	  out(N);
+	  T = window(b);
+	  minFreqPoint = minFreq*T;
+	  maxFreqPoint = maxFreq*T;
+	  n1=floor(N/10);
+	  n2=N-floor(N/10);
+	  w=b;
+	  w=1;
+
+	  for(i=0;i<n1;i=i+1)
+	  {
+		    w[i]=sqr(sqr(sin(i/n1*pi()/2)));
+	  }
+
+	  upper = N - n2;
+	  for(i=0;i< upper;i=i+1)
+	  {
+		    index = n2 + i;
+		    w[index]=sqr(sqr(sin(pi()*(upper - i)/(upper)/2)));
+	  }
+	  base2 = lf(base,6,8,-8);
+	  pos = 0;
+	  maxVal = max(base2,pos);
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    if(base2[ia] < maxVal - threshold)
+		    {
+			      base2[ia] = 0;
+		    }
+		    else
+		    {
+			      base2[ia] = base2[ia] - (maxVal - threshold);
+		    }
+	  }
+}
+
+summ=base;
+summ=0;
+sig_add(path,base2);
+sig_delete_all(path);
+if (backgroundMeasurement)
+{
+for(i=0;i<NA;i=i+1)
+{
+	  acquire(1,b,2,current);
+	  current2 = lf(current,6,8,-8);
+			      
+	  pos = 0;
+	  maxVal = max(current2,pos);
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    if(current2[ia] < maxVal - threshold)
+		    {
+			      current2[ia] = 0;
+		    }
+		    else
+		    {
+			      current2[ia] = current2[ia] - (maxVal - threshold);
+		    }
+	  }
+			      
+	  (dt)=difference2(base2,current2);
+	  dt = -dt;
+	  (s2)=push2(b,dt);
+	  (s3)=push2(current2,dt);
+	  summ=summ+s2;
+	  
+	  sig_add(path, s2);
+	  sig_add(path, s3);
+	  
+}
+r13 = summ;
+b=lf(w*hf(summ/NA,minFreq,0.5*minFreq,-6),maxFreq,maxFreq*1.1,-6);
+
+pause();
+}
+
+w3=b;
+freqN=count(w3);
+n1 = 0.1*freqN;
+n2 = 0.4*freqN;
+n3 = 0.5*freqN;
+
+//n1 = 0.3*freqN;
+//n2 = 0.6*freqN;
+//n3 = 0.7*freqN;
+w3=1;
+out(N);
+
+for(i=0;i<n1;i=i+1)
+{
+	w3[i]=sqr(sqr(sin(i/n1*pi()/2)));
+}
+upper = n3 - n2;
+	
+for(i=0;i< upper;i=i+1)
+{
+	 index = n2 + i;
+	 w3[index]=sqr(sqr(sin(pi()*(upper - i)/upper/2)));
+}
+
+for(i=n3;i<freqN;i=i+1)
+{
+	w3[i]=0;
+}
+
+minimumRCS = mag(fft(b));
+minimumRCS = 0;
+rcsMean = minimumRCS ;
+rcsMean = 0;
+for (i = minFreqPoint; i <= maxFreqPoint; i = i + 1)
+{
+	  minimumRCS[i] = 10000000;
+}
+maximumRCS = mag(fft(b));
+maximumRCS = 0;
+
+
+
+for (k = 0; k < numOfTests; k = k + 1)
+{
+	  summ=base;
+	  summ=0;
+	  out(k);
+
+	  for(i=0;i<NA;i=i+1)
+	  {
+		    acquire(1,sig,2,current);
+		    current2 = lf(current,6,8,-8);
+		    
+		    pos = 0;
+		    maxVal = max(current2,pos);
+		    for (ia = 0; ia < N; ia = ia + 1)
+		    {
+			      if(current2[ia] < maxVal - threshold)
+			      {
+					current2[ia] = 0;
+			      }
+			      else
+			      {
+					current2[ia] = current2[ia] - (maxVal - threshold);
+			      }
+		    }
+		    
+		    (dt)=difference2(base2,current2);
+		    dt = -dt;
+		    (s2)=push2(sig,dt);
+		    //out(dt);
+		    summ=summ+s2;
+		    r13 = current;
+		    r15 = base2;
+		    r16 = current2;
+		    (s3)=push2(current2,dt);
+
+		    sig_add(path, s2);
+		    sig_add(path, s3);
+	  }
+
+	  rawObjectSignal=lf(w*hf(summ/NA,minFreq,0.5*minFreq,-6),maxFreq,maxFreq*1.1,-6) -b;
+	  
+	  objectSignalFreq = fft(rawObjectSignal*w3)*calibrationFunction;
+	  r4 = rawObjectSignal*w;
+	  r9 = sqr(mag(objectSignalFreq));
+	  
+	  set_matrix_row(mt, k, r9);
+	  
+	  for (i = minFreqPoint; i <= maxFreqPoint; i = i + 1)
+	  {
+		    if (r9[i] > maximumRCS[i])
+		    {
+			      maximumRCS[i] = r9[i];
+		    }
+		    if (r9[i] < minimumRCS[i])
+		    {
+			      minimumRCS[i] = r9[i];
+		    }
+	  }
+	  rcsMean = rcsMean + r9;
+	  r10 = minimumRCS;
+	  r11 = maximumRCS;
+	  
+	  if (withPause)
+	  {
+		    pause();
+	  }
+}
+
+rcsMean = rcsMean/numOfTests;//why can't use numOfTests
+stdDeviation = get_matrix_row(mt, 0);
+stdDeviation = 0;
+for (k = 0; k < numOfTests; k = k + 1)
+{
+	  stdDeviation = stdDeviation + pow(get_matrix_row(mt, k) - rcsMean,2);
+}
+stdDeviation = sqrt(stdDeviation/(numOfTests - 1));
+
+r12 = rcsMean;
+r13 = rcsMean + stdDeviation;
+r14 = rcsMean - stdDeviation;
+r7 = db((rcsMean + stdDeviation)/rcsMean)/2;

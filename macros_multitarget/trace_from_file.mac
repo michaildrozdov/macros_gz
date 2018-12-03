@@ -1,0 +1,823 @@
+clear_variables();
+//Initialization
+bestMaximum = 0;
+bestxx = 0;
+bestyy = 0;
+showSignals = false;//update registers with current signals, if true
+stationaryBackground = false;//one signal is used as background
+calculateTargetSpace = true;//if false, only signals are acquired/loaded, but no other processing
+meanCoef = 0.0;//how much of accumulated background is used in next frame, 0 - means current - prev
+backAt = 32;//which frame should be used as a background, when loading from file
+startAt = 0;//at which frame to start, when loading from file
+endAt = 1000;//at which frame to end, when loading from file
+skipSize = 2;//how many points are skipped, while searching for targets in delay-angle space.
+//Smaller number means finer search, but longer calculation. Minimum is 1 - each point will be checked
+
+passSize = 4;//if there is gap of lower than threshold values between two regions of higher than threshold values,
+//it is ignored and two regions are joined to one target, if gap is less than this parameter
+
+arrayD = 12;//distance between centers of arrays
+maxVel = 1.5;//m/s
+deltaT = 2;//s expected duration between frames, will be updated
+
+thresholdValue = 200;//checked of power
+pulseDuration = 2;//duration for integration, when calculating power from difference
+falloffDuration = 0.5;//duration of falloff in integration window, when calculating power from difference
+parametersNumber = 6;//when loading, omit first 6 signals, as those are parameters
+d = 0.13;//distance between antenna elements
+minDistance = rangestart;//rangeStart is given in params.mac
+if (minDistance < 0)
+{
+	  minDistance = 0;
+}
+distStep = 0.1;
+maxDistance = rangeend;
+
+//init of image matrix (where argets are displayed)
+imageSizeX = ceil((maxDistance - minDIstance)/distStep);
+imageSizeY = ceil((arrayD+18)/distStep);
+imageMatrix = matrix(imageSizeX, imageSizeY);
+imageMatrix = 0;
+//draw(imageMatrix);
+
+
+c = 0.3;//m/ns
+maxTheoreticalDelay = d/c + 0.1;
+timeStart = 268 - arrayD/c;//ns, t0
+timeStart = 286 - arrayD/c;//ns, t0, this is more apropriate based on results of actual measurements
+
+
+//if saveTo exists, parameters are read
+
+params1 = sig_read(saveTo,0);
+params2 = sig_read(saveTo,1);
+params3 = sig_read(saveTo,2);
+params4 = sig_read(saveTo,3);
+params5 = sig_read(saveTo,4);
+params6 = sig_read(saveTo,5);
+
+startAngle = params1[0];
+endAngle = params2[0];
+angleStep = params3[0];
+distanceAt0ns = params4[0];//not used
+useThirdSignal = params5[0];//not used
+coarseDel = params6[0];
+
+maxAngleDisplace = abs(startAngle);
+if (abs(maxAngleDisplace) < abs(endAngle))
+{
+	  maxAngleDisplace = abs(endAngle);
+}
+	  
+numOfSigs = (sig_get_count(saveTo) - parametersNumber);
+
+sigsInPeriod = 8;//how many signals in period of acquisition, if signals were acquired in difference mode from the start
+//(16 at once), then taking them by 8 would mean different delays between sets of 8 (due to processing during meas)
+
+numOfSigs = numOfSigs/sigsInPeriod;//how many periods there is
+numOfSigs = floor(NumOfSigs);
+
+if (endAt > numOfSigs)
+{
+	  endAt = numOfSigs;
+}
+
+angles = signal(1,numOfSigs,false);
+amplitudes = signal(1,numOfSigs,false);
+
+atAngle = startAngle;//deg
+
+
+prev1 = sig_read(saveTo,parametersNumber);//signal is loaded to get N and T
+N = count(prev1);
+T = window(prev1);
+
+//scaling registers
+r2 = prev1;
+r3 = prev1;
+r4 = prev1;
+r5 = prev1;
+r6 = prev1;
+r7 = prev1;
+r8 = prev1;
+r9 = prev1;
+r10 = prev1;
+r11 = prev1;
+r12 = prev1;
+r13 = prev1;
+r14 = prev1;
+r15 = prev1;
+r16 = prev1;
+r1 = prev1;
+
+powersignal = matrix(8,N);//array to store power, calculated from difference signal
+powerRaw = matrix(8,N);//array to store power, calculated from direct signal
+powerWithThreshold = matrix(8,N);//if threshold is used for power, here power after applying threshold is stored
+prevSignal = matrix(8,N);//previous signal
+currentSignal = matrix(8,N);//current signal
+differenceSignal = matrix(8,N);//difference between current and previous
+angleSpaceStep = 5;//when building angle-delay space, what is angle step
+anglesNum = 90/angleSpaceStep+1;//covering 90 degrees field of view with selected step
+distanceAngleSpace = matrix(anglesNum,N/skipSize);//building matrix for angle-delay space, it is skipSize times less than number of points
+stdevStep = 2*floor(N/skipSize/5/2);//when calculating variable threshold, it is calculated based on standard deviation of
+//signal itself around given point, to avoid long calculations, it is calculated in regions, not in every point. So stdevStep is size of region for
+//one calculation
+thresholdValuesLocal = signal(1, N/skipSize, false);//array, which will be used to store variable (with point in signal) threshold
+stddevLocalCalcArray = signal(1, stdevStep, false);//array to store region of power signal for quick mean and stdev calculation
+
+
+//if maximum angle is wide enough, drawing area width is calculated directly from that angle
+//otherwise additional width of maxDistance/3 is added to avoid drawing area as narrow strip
+if (maxAngleDisplace > 10)
+{
+	  maxDisplace = maxDistance*sin(maxAngleDisplace*pi()/180);
+}
+else
+{
+	  maxDisplace = maxDistance*sin(maxAngleDisplace*pi()/180) + maxDistance/3;
+}
+
+longDifference = matrix(8,8*N);//8 times increased number of points for difference signal, used for zero padding
+longSignal = signal(T,8*N,false);//signal, which has 8 times number of points in same time window, only used to give
+//proper frequency scale to longSpectrumConst
+longSpectrumConst = fft(longSignal);//long spectrum, used during zeropadding
+longSpectrumConst = 0;
+
+sp = fft(prev1);//normal length spectrum, used during zeropadding
+divisionStep = (maxDistance + 20 - minDistance)/10;//entire area under test plus 20 meters (to avoid target moving out of the zone)
+//devided into 10 to find size of one grid element in drawing
+
+//to avoid strange numbers of division step (for example 2.5824 m), division step is rounded
+if ((divisionStep > 0.5) and (divisionStep <= 1.4))
+{
+	  divisionStep = 1;
+}
+if ((divisionStep > 1.4) and (divisionStep <= 3))
+{
+	  divisionStep = 2;
+}
+if ((divisionStep > 3) and (divisionStep <= 6.5))
+{
+	  divisionStep = 5;
+}
+if ((divisionStep > 6.5) and (divisionStep <= 14))
+{
+	  divisionStep = 10;
+}
+if ((divisionStep > 14) and (divisionStep <= 50))
+{
+	  divisionStep = 20;
+}
+
+var = ceil((arrayD + 2.4*maxDisplace)/divisionStep)*divisionStep;
+left = var - (arrayD + 2.4*maxDisplace);
+
+antennasToDisplay = signal(1,12,false);
+antennasToDisplay[0] = (var + left)/2 - arrayD/2;
+antennasToDisplay[1] = (var + left)/2 - arrayD/2;
+antennasToDisplay[2] = (var + left)/2 - arrayD/2;
+antennasToDisplay[3] = (var + left)/2 - arrayD/2;
+antennasToDisplay[4] = (var + left)/2 - arrayD/2;
+antennasToDisplay[5] = (var + left)/2 - arrayD/2;
+antennasToDisplay[6] = (var + left)/2 - arrayD/2;
+antennasToDisplay[7] = (var + left)/2 - arrayD/2;
+antennasToDisplay[8] = (var + left)/2 + arrayD/2;
+antennasToDisplay[9] = (var + left)/2 + arrayD/2;
+antennasToDisplay[10] = (var + left)/2 + arrayD/2;
+antennasToDisplay[11] = (var + left)/2 + arrayD/2;
+out(maxDisplace);
+
+//xyinit(-maxDisplace*1.2,minDistance,maxDisplace*1.2+arrayD,maxDistance*1.2,antennasToDisplay,divisionStep,1);
+xyinit(-(var + left)/2,minDistance,(var + left)/2,maxDistance,antennasToDisplay,divisionStep,1);
+
+xyclear();
+
+if (abs(startAngle - endAngle) > 0.01)
+{
+	  xyaddlines(arrayD,0,arrayD - (maxDistance + 20)*tan(startAngle*pi()/180), maxDistance+20,arrayD,0,arrayD - (maxDistance+20)*tan(endAngle*pi()/180), maxDistance+20);
+}
+
+pointsPerNs = N/T;
+nsPerPoint = T/N;
+
+slidingWindowN = ceil(pulseDuration*pointsPerNs);
+slidingWindow = signal(pulseDuration, slidingWindowN, false);
+meanSig = slidingWindow;
+
+signalPart = signal(pulseDuration,slidingWindowN,false);
+
+start1point = 0;
+start2point = floor(falloffDuration*slidingWindowN/pulseDuration);
+end1point = floor((pulseDuration - falloffDuration)*slidingWindowN/pulseDuration);
+end2point = slidingWindowN-1;
+
+slidingWindow = 0;
+for (ia = start1point; ia < start2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(-pi()/2 + pi() *(ia - start1point)/(start2point - start1point)))/2;
+}
+for (ia = start2point; ia < end1point; ia = ia + 1)
+{
+	  slidingWindow[ia] = 1;
+}
+for (ia = end1point; ia < end2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - end1point)/(end2point - end1point)))/2;
+}
+
+detected = 0;
+sinceDetected = 20;
+
+disp = parametersNumber+0*sigsInPeriod;
+prevAngle = 0;
+meanSignal = matrix(8,N);
+
+constSignal = prev1;
+constSignal = 0;
+for (ia = 0; ia < 8; ia = ia + 1)
+{
+	  set_matrix_row(meanSignal, ia, constSignal);
+}
+
+
+counter = 1;
+
+for (ind1 = 0; ind1 < startAt; ind1 = ind1 + 1)
+{
+	  test = sig_read(saveTo, disp + ind1*sigsInPeriod);
+	  pointCount = count(test);
+	  if (pointCount == 3)
+	  {
+		    disp = disp + 1;
+		    coarseDel = test[0];
+		    out(coarseDel);
+	  }
+}
+thresholds = signal(1,8,false);
+firstOccurance = signal(1,8,false);
+lastOccurance = signal(1,8,false);
+hadMaximum = signal(1,8,false);
+
+weights = matrix(8,8);
+delays = matrix(8,8);
+weights = 0;
+prevDistance = 0;
+prevAngle = 0;
+
+
+n1=floor(N/20);//10% from start
+n2=N-floor(N/20);//90% from start
+
+
+//windowing function start  
+w=prev1;
+w=1;//fill with ones
+
+
+//fill first 10% with rising sinusoid
+for(i=0;i<n1;i=i+1)
+{
+	  w[i]=sqr(sqr(sin(i/n1*pi()/2)));
+}
+
+//fill last 10% with rising sinusoid
+upper = N - n2;
+//index = 0;
+for(i=0;i< upper;i=i+1)
+{
+	  index = n2 + i;
+	  w[index]=sqr(sqr(sin(pi()*(upper - i)/(upper)/2)));
+}
+//windowing function end
+
+targetsUsedDelay = signal(1,300, false);
+targetsUsedAngle = signal(1,300, false);
+targetsUsedMaximum = signal(1,300, false);
+targetsUsedDispersion = signal(1,300, false);
+// End of Initialization
+
+xes = signal(1,1000,false);
+yes = signal(1,1000,false);
+xes = 0;
+yes = 0;
+currentFrame = 0;
+//Main loop
+for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
+{
+	  before = time();
+	  //Signal acquisition
+	  test = sig_read(saveTo, disp + ind1*sigsInPeriod);
+	  pointCount = count(test);
+	  if (pointCount == 3)
+	  {
+		    disp = disp + 1;
+		    coarseDel = test[0];
+		    out(coarseDel);
+	  }
+	  curDisp = ind1*sigsInPeriod;
+	  for (ka = 0; ka < 8; ka = ka + 1)
+	  {
+		    set_matrix_row(prevSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka));
+		    set_matrix_row(currentSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka + 8));
+	  }
+	  if (stationaryBackground)
+	  {
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      set_matrix_row(prevSignal, ka, w*sig_read(saveTo, parametersNumber + backAt*sigsInPeriod + ka));
+		    }
+	  }
+	  
+	  for (ka = 0; ka < 8; ka = ka + 1)
+	  {
+		    set_matrix_row(meanSignal, ka, (1 - meanCoef)*get_matrix_row(prevSignal,ka) + meanCoef*get_matrix_row(meanSignal,ka));
+	  }
+
+	  //End of Signal acquisition
+	  
+	  
+	  //Difference signal calculation
+	  ffilt1 = 4;//GHz
+	  ffilt2 = 4.5;//GHz
+	  for (point = 0; point < N - slidingWindowN; point = point + 1)
+	  {
+	    
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      tempNormal = get_matrix_row(currentSignal, ka)/1000;
+			      insert(tempNormal,point,point + slidingWindowN - 1, signalPart,0);
+			      signalPart = signalPart*slidingWindow;
+			      meanVal = mean(signalPart);
+			      meanSig = meanVal;
+			      set_matrix(powerRaw, ka, point, sum((signalPart - meanSig)*(signalPart - meanSig)));
+		    }
+	  }
+	  
+	  for (ka = 0; ka < 8; ka = ka + 1)
+	  {
+		    cur = get_matrix_row(currentSignal,ka);
+		    mea = get_matrix_row(meanSignal,ka);
+		    set_label(cur,T,"nS","mV");
+		    set_label(mea,T,"nS","mV");
+		    curPower = get_matrix_row(powerRaw,ka);
+		    set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6)/(push(curPower,slidingWindowN/2) + 0.5));
+		    tempNormal = get_matrix_row(differenceSignal, ka);
+		    set_label(tempNormal,T,"nS","mV");
+
+		    sp = fft(tempNormal);
+		    longSpectrumConst = 0;
+		    insert(sp,0,N/2-2,longSpectrumConst,0);
+		    
+		    set_matrix_row(longDifference, ka, ifft(longSpectrumConst));
+	  }
+	  //End of Difference signal calculation
+
+
+	  //Power calculation
+	  sigPower = tempNormal;
+	  sigPower = 0;
+	  for (point = 0; point < N - slidingWindowN; point = point + 1)
+	  {
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      tempNormal = get_matrix_row(differenceSignal, ka);
+			      insert(tempNormal,point,point + slidingWindowN - 1, signalPart,0);
+			      signalPart = signalPart*slidingWindow;
+			      meanVal = mean(signalPart);
+			      meanSig = meanVal;
+			      valueToSet = sum((signalPart - meanSig)*(signalPart - meanSig));
+			      if (valueToSet < 0)
+			      {
+					valueToSet = 0;
+			      }
+			      set_matrix(powersignal, ka, point, valueToSet);
+		    }
+	  }
+	  //End of Power calculation
+	    
+	  pos = 0;
+	  if (showSignals)
+	  {
+			  r1 = get_matrix_row(currentSignal, 0) - get_matrix_row(prevSignal, 0);
+			  r2 = get_matrix_row(currentSignal, 1) - get_matrix_row(prevSignal, 1);
+			  r3 = get_matrix_row(currentSignal, 2) - get_matrix_row(prevSignal, 2);
+			  r4 = get_matrix_row(currentSignal, 3) - get_matrix_row(prevSignal, 3);
+			  r5 = get_matrix_row(currentSignal, 4) - get_matrix_row(prevSignal, 4);
+			  r6 = get_matrix_row(currentSignal, 5) - get_matrix_row(prevSignal, 5);
+			  r7 = get_matrix_row(currentSignal, 6) - get_matrix_row(prevSignal, 6);
+			  r8 = get_matrix_row(currentSignal, 7) - get_matrix_row(prevSignal, 7);
+			  
+			  r9 = get_matrix_row(powersignal, 0)/100;
+			  r10 = get_matrix_row(powersignal, 1)/100;
+			  r11 = get_matrix_row(powersignal, 2)/100;
+			  r12 = get_matrix_row(powersignal, 3)/100;
+			  r13 = get_matrix_row(powersignal, 4)/100;
+			  r14 = get_matrix_row(powersignal, 5)/100;
+			  r15 = get_matrix_row(powersignal, 6)/100;
+			  r16 = get_matrix_row(powersignal, 7)/100;
+	  }
+
+
+	  time_mark1 = time()-before;
+	  out(time_mark1);
+	  imageMatrix = 0;
+	  distanceAngleSpace = 0;
+	  targetsFound = 0;
+
+	  if (calculateTargetSpace)
+	  {
+		    pos = 0;
+			      
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      meanVal = mean(get_matrix_row(powersignal,ka));
+			      maxVal = max(get_matrix_row(powersignal,ka), pos);
+			      thresholds[ka] = (maxVal - meanVal)/2;
+			      firstOccurance[ka] = -1;
+			      lastOccurance[ka] = -1;
+			      hadMaximum[ka] = 0;
+		    }
+
+		    //Threshold on power (if needed)
+		    currentThreshold = 0;
+		    if (currentThreshold > 0)
+		    {
+			      for (ka = 0; ka < 8; ka = ka + 1)
+			      {
+					tempNormal = get_matrix_row(powersignal, ka);
+					thresholdValueLocal = currentThreshold*max(tempNormal, pos);
+					for (ia = 0; ia < N; ia = ia + 1)
+					{
+						  if (tempNormal[ia]  > thresholdValueLocal)
+						  {
+							    tempNormal[ia] = tempNormal[ia] - thresholdValueLocal;
+						  }
+						  else
+						  {
+							    tempNormal[ia] = 0;
+						  }
+					}
+
+					set_matrix_row(powerWithThreshold, ka, tempNormal);
+			      }
+		    }
+		    else
+		    {
+			      for (ka = 0; ka < 8; ka = ka + 1)
+			      {
+					tempNormal = get_matrix_row(powersignal, ka);
+					set_matrix_row(powerWithThreshold, ka, tempNormal);
+			      }
+		    }
+		    //End of Threshold on power (if needed)
+		    tempSig = get_matrix_row(powerWithThreshold, 0)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r1 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 1)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r2 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 2)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r3 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 3)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r4 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 4)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r5 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 5)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r6 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 6)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r7 = tempSig;
+		    tempSig = get_matrix_row(powerWithThreshold, 7)/100;
+		    set_label(tempSig,T,"nS","mV");
+		    r8 = tempSig;
+		    
+		    //Finding fronts and zero padding
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      tempNormal = get_matrix_row(powerWithThreshold, ka);
+					
+			      maxValue = max(tempNormal, pos);
+			      set_label(tempNormal,T,"nS","mV");
+			      tempNormal = differ(tempNormal);//to find steepest front
+			      for (la = 0; la < N; la = la + 1)
+			      {
+					if (tempNormal[la] < 0)
+					{
+						  tempNormal[la] = 0;
+					}
+			      }
+			      sp = fft(tempNormal);
+			      longSpectrumConst = 0;
+			      insert(sp,0,N/2-2,longSpectrumConst,0);//zero padding
+							      
+			      set_matrix_row(longDifference, ka, ifft(longSpectrumConst));	
+		    }
+		    //Finding fronts and zero padding
+
+		    //r9 = get_matrix_row(longDifference, 0)/10;
+		    //r10 = get_matrix_row(longDifference, 1)/10;
+		    //r11 = get_matrix_row(longDifference, 2)/10;
+		    //r12 = get_matrix_row(longDifference, 3)/10;
+		    //r13 = get_matrix_row(longDifference, 4)/10;
+		    //r14 = get_matrix_row(longDifference, 5)/10;
+		    //r15 = get_matrix_row(longDifference, 6)/10;
+		    //r16 = get_matrix_row(longDifference, 7)/10;
+
+		    //thresholdValue = 0.05*max(get_matrix_row(longDifference, 3), pos);
+		    //print_line("Signals displayed");
+		    
+		    
+		    //Building delay-angle space
+		    //thresholdValue = 1000;
+
+		    for (distance = 0; distance < N; distance = distance + skipSize)
+		    {
+			      
+			      pointInSignal = distance*8;
+			      testSig = get_matrix_row(longDifference, 3);
+			      set_label(testSig,T,"nS","mV");
+
+			      thresholdReached = false;
+			      for (passInd = 0; passInd < passSize*8; passInd = passInd + 1)
+			      {
+					tempIndex = pointInSignal + passInd;
+					if (tempIndex >= N*8)
+					{
+						goto can_calc;  
+					}
+					if (testSig[tempIndex] > thresholdValue)
+					{
+						  thresholdReached = true;
+						  goto can_calc;
+					}
+			      }
+			      
+			      can_calc:
+			      
+			      if (thresholdReached)
+			      {
+					for (angle = 0; angle < anglesNum; angle = angle + 1)
+					{
+						  delayPerAntenna = d/c*N/T*8*sin((angle*angleSpaceStep-45)*pi()/180);
+						  summation = 0;
+						  
+						  for (ka = 0; ka < 8; ka = ka + 1)
+						  {
+							    displace = (ka-3)*delayPerAntenna;
+							    index = floor(pointInSignal + displace);
+							    if ((index >= 0) and (index < N*8))
+							    {
+								      tempLong = get_matrix_row(longDifference, ka);
+								      summation = summation + tempLong[index]/10;
+							    }
+						  }
+						  set_matrix(distanceAngleSpace, angle, distance/skipSize, get_matrix(distanceAngleSpace, angle, distance/skipSize) + summation);
+					}
+			      }
+
+		    }
+		    //End Building delay-angle space
+		    
+		    //Building threshold array
+		    testArray = get_matrix_row(distanceAngleSpace, (anglesNum-1)/2);
+		    set_label(testArray,T,"nS","mV");
+		    r16 = testArray;
+		    maximumValue = max(testArray, pos);
+
+		    thresholdValuesLocal = thresholdValue;
+
+		    for (ind11 = 0; ind11 < N/skipSize-stdevStep/2; ind11 = ind11 + 1)
+		    {
+			      //////print_line("Current index ", ind11);
+			      if (ind11 < stdevStep/2)
+			      {
+					insert(testArray, 0, stdevStep - 1, stddevLocalCalcArray, 0);
+					stddevLocalCalcArray = 2*stddevLocalCalcArray*(ind11 + 1)/stdevStep;
+			      }
+			      else
+			      {
+					insert(testArray, ind11-stdevStep/2, ind11 + stdevStep/2 - 1, stddevLocalCalcArray, 0);
+			      }
+			      value = stdev(stddevLocalCalcArray);
+			      meanValue = mean(stddevLocalCalcArray);
+			      //print_line("st deviation ", value, " mean value ", meanValue);
+
+			      thresholdValuesLocal[ind11] = meanValue + 2*value;
+			      if (thresholdValuesLocal[ind11] > 30*thresholdValue)
+			      {
+					thresholdValuesLocal[ind11] = 30*thresholdValue;
+			      }
+			      else
+			      {
+					if (thresholdValuesLocal[ind11] < thresholdValue)
+					{
+						  thresholdValuesLocal[ind11] = thresholdValue;
+					}
+			      }
+		    }
+		    //print_line("Signals displayed");
+		    r15 = thresholdValuesLocal;
+		    
+		    //End of Building threshold array
+
+		    thresholdValue2 = mean(testArray) + 2*stdev(testArray);
+		    sigForMean = testArray;
+		    
+		    //Searching for targets and localizing in delay-angle space
+		    for (ind11 = 0; ind11 < N; ind11 = ind11 + skipSize)
+		    {
+			      //print_line("ind11", ind11);
+			      probeIndex = ind11/skipSize;
+			      if (testArray[probeIndex] > thresholdValuesLocal[probeIndex])
+			      {
+					for (ind2 = ind11 + skipSize; ind2 < N; ind2 = ind2 + skipSize)
+					{
+						  probeIndex2 = ind2/skipSize;
+						  if (testArray[probeIndex2] < thresholdValuesLocal[probeIndex2])
+						  {
+							    if (ind2 >= ind11 + 3*skipSize)//wide enough
+							    {
+								      //calculation of center of mass
+								      totalWeight = 0;
+								      totalDist = 0;
+								      totalAngle = 0;
+								      totalDisp = 0;
+								      totalDispWeight = 0;
+								      absoluteMax = 0;
+								      meanVal = 0;
+								      
+								      for (angle = 0; angle < anglesNum; angle = angle + 1)
+								      {
+										tempSig = get_matrix_row(distanceAngleSpace, angle)/thresholdValue2;
+										//r15 = tempSig;
+										sigForMean = 0;
+										insert(tempSig, ind11/skipSize, ind2/skipSize, sigForMean, 0);
+										meanVal = meanVal + mean(sigForMean);
+										localMax = max(sigForMean, pos);
+										if (localMax > absoluteMax)
+										{
+											  absoluteMax = localMax;
+										}
+								      }
+								      meanVal = meanVal/anglesNum;
+								      
+								      for (angle = 0; angle < anglesNum; angle = angle + 1)
+								      {
+										tempSig = get_matrix_row(distanceAngleSpace, angle)/thresholdValue2;
+										
+										for (ind3 = ind11; ind3 <= ind2; ind3 = ind3+skipSize)
+										{
+											  probeIndex3 = ind3/skipSize;
+											  totalDisp = totalDisp + 100*(meanVal - tempSig[probeIndex3])*(meanVal - tempSig[probeIndex3]);
+											  //totalDispWeight = totalDispWeight +tempSig[ind3/skipSize];
+											  totalDispWeight = totalDispWeight + 1;
+											  if(tempSig[probeIndex3] > 0.7*absoluteMax)
+											  { 
+												   totalDist = totalDist + ind3*(tempSig[probeIndex3] - 0.7*absoluteMax);
+												    totalAngle = totalAngle + angle*(tempSig[probeIndex3] - 0.7*absoluteMax);
+												    totalWeight = totalWeight+(tempSig[probeIndex3] - 0.7*absoluteMax);
+												    
+											  }
+										}
+								      }
+								      
+								      width = ind2 - ind11;
+								      targetsUsedDelay[targetsFound] = totalDist/totalWeight;
+								      targetsUsedAngle[targetsFound] = totalAngle/totalWeight*angleSpaceStep-50;
+								      targetsUsedMaximum[targetsFound] = absoluteMax;
+								      targetsUsedDispersion[targetsFound] = totalDisp/anglesNum*skipSize/(ind2 - ind11 + 1);
+								      if (targetsUsedDispersion[targetsFound] > 20*targetsUsedMaximum[targetsFound])
+								      {
+										//only increase target count, if it is not some near constant blob
+										targetsFound = targetsFound + 1;
+								      }
+								      else
+								      {
+										localDisp = totalDisp/totalDispWeight/anglesNum*skipSize/(ind2 - ind11 + 1);
+								      }
+								      ind11 = ind2 + skipSize;
+								      goto ne;
+							    }
+							    else
+							    {
+								    ind11 = ind2 + skipSize;
+								      goto ne;  
+							    }
+						  }
+					}
+			      }
+			      
+			      ne:
+		    }
+		    
+		    //End of Searching for targets and localizing in delay-angle space
+		    bestMaximum = 0;
+		    bestxx = 0;
+		    bestyy = 0;
+		    for (ia = 0; ia < targetsFound; ia = ia + 1)
+		    {
+			      curDelay = targetsUsedDelay[ia];
+			      curAngle = targetsUsedAngle[ia];
+			      curMax = targetsUsedMaximum[ia];
+			      curDispersion = targetsUsedDispersion[ia];
+			      
+			      if (curDispersion > 1000)
+			      {
+					curDispersion = 1000;
+			      }
+			      
+			      //calculation of coordinates from angle and total path from transmitter to target to receiver
+			      //let C be base of radar (arrayD)
+			      //let A be distance from receiving array to target
+			      //let B be distance from transmitting array to target
+			      //let alpha be angle between A and C
+			      //total path r is known, also:
+			      //r = A + B;
+			      //from theorem of cosine:
+			      //B^2 = A^2 + C^2 - 2ACcos(alpha)
+			      //B = r - A;
+			      //r^2 - 2rA + A^2 = A^2 + C^2 - 2ACcos(alpha)
+			      //2A(Ccos(alpha) - r)= C^2 - r^2;
+			      //A = (C^2-r^2)/(2(Ccos(alpha) - r));
+			      
+			      r = (curDelay*T/N + coarseDel - timeStart)*c;
+			      AA = (arrayD*arrayD - r*r)/(2*(arrayD*cos((90-curAngle)*pi()/180) - r));
+			      x = AA*cos((90-curAngle)*pi()/180);
+			      y = AA*sin((90-curAngle)*pi()/180);
+			      ////print_line("Coordinates are: x ", x, ", y ", y);
+			      
+			      //if (curMax*curDispersion > bestMaximum)
+			      if (curDispersion > bestMaximum)
+			      {
+					//bestMaximum = curMax*curDispersion;
+					bestMaximum = curDispersion;
+					bestxx = x;
+					bestyy = y;
+			      }
+
+			      //xyplot(x-arrayD/2,y);
+			      xIndex = imageSizeX - floor((y-minDistance)/(maxDistance - minDistance)*imageSizeX);//yes, it is stored to x
+			      yIndex = floor((x+9)/(arrayD+18)*imageSizeY);
+			      
+			      effectiveSize = floor(4000/curDispersion + 1)*0.1/distStep;//limit of maximum size of target, to save processing time
+			      if (effectiveSize > imageSizeX/2)
+			      {
+					effectiveSize = floor(imageSizeX/2);
+			      }
+			      ////print_line("Effective size of target ", ia, " is ", effectiveSize);
+
+			      //filling image matrix region with target
+			      for (xInd = -effectiveSize; xInd < effectiveSize; xInd = xInd + 1)
+			      {
+					for (yInd = -effectiveSize; yInd < effectiveSize; yInd = yInd + 1)
+					{
+						  if ((xIndex+xInd >= 0) and (xIndex+xInd < imageSizeX) and (yIndex+yInd >= 0) and (yIndex+yInd < imageSizeY))
+						  {
+							     if (get_matrix(imageMatrix, xIndex+xInd, yIndex+yInd) < (exp(-(xInd*xInd + yInd*yInd)*((curDispersion + 30)/10000)))*curMax)
+							    {
+								      set_matrix(imageMatrix, xIndex+xInd, yIndex+yInd, (exp(-(xInd*xInd + yInd*yInd)*((curDispersion + 30)/10000)))*curMax);
+							    } 
+						  }
+					}
+			      }
+			      
+			      
+			      
+			      
+		    }
+		    
+		    xes[currentFrame] = bestxx;
+		    yes[currentFrame] = bestyy;
+		    if ((bestxx != 0) or (bestyy != 0))
+		    {
+			      xyplot(bestxx-arrayD/2,bestyy);
+		    }
+		    currentFrame = currentFrame + 1;
+		    set_matrix(imageMatrix,0,0,3);
+		    ////print_line("");
+		    ////print_line("");
+		    
+		    continue2:
+
+	  }
+		    
+	  //draw(distanceAngleSpace);
+	  draw(imageMatrix);
+
+	  
+	  time_mark2 = time()-before;
+	  out(time_mark2);
+	  
+	  //pause();
+	  
+	  next:
+}
+
+r15 = xes;
+r16 = yes;
+
+//End of Main loop

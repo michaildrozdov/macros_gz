@@ -1,0 +1,12 @@
+clear_variables();
+averageNoiseRMS = 0;
+for (ia = 0; ia < 10; ia = ia + 1)
+{
+	  currentNoiseRMS = stdev(ch1);
+	  out(currentNoiseRMS);
+	  averageNoiseRMS = averageNoiseRMS + currentNoiseRMS;
+	  sleep(2000);
+}
+
+averageNoiseRMS = averageNoiseRMS/10;
+out(averageNoiseRMS);

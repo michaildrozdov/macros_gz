@@ -1,0 +1,56 @@
+
+c=30; //speed of light 30 cm/ns
+r = 17.5; // radius of sphere 25 cm
+
+//usually this macro is used to compare theoretical RCS with calculated from measurements
+//since we collect our signal from oscilloscope, it is best to compare RCS with same frequency step and have
+//arrays of same length, that's why we initialize signal (ref) from channel 1 of oscilloscope (ch1)
+ref=ch1; //creates signal by copying from socilloscope channel. Just imagine array of floats of some fixed length with some additional info
+t=window(ref);//gets time window of signal
+p=count(ref);//gets number of points in signal
+pt=p/2+1;//number of points in frequency domain signal after Fourier transform is performed
+rr=fft(ref);//array to store final RCS, it is of length pt and can store complex values
+df=1/t; //frequency step calculated from time window (period of signal)
+eps = 0.0001; // "almost zero", bad things happen if zero is used in code below
+rr=1; //RCS array is initialized to constant value
+index=0;//index to iterate over RCS array
+
+//for all frequencies starting at zero (almost) and ending at 30 GHz
+for (nr=eps;nr<30;nr=nr+df)
+{
+	kr = 2*pi()*nr*r/c; //wave number times radius of sphere
+        srcs = 0 + 0*j(); //complex zero
+    	f1 =1*j();//complex one
+    	f2 = 1+0*j() ;//real one in complex format
+    	m = 1;
+    	n = 0;
+    	q = -1;
+    	del = 10000+10000*j();
+	del2=cabs(del); //absolute value of complex number
+	while (del2>eps)
+	 {
+	  	q = -q;
+        	n = n + 1;
+        	m = m + 2;
+        	del = (2*n-1) * f2 / kr-f1;
+        	f1 = f2;
+        	f2 = del;
+		del=divi(q * m,f2 * (kr * f1 - n * f2)); //divi is safe division. Just outputs zero, if there is division by zero
+        	srcs = srcs + del;
+        	del2=cabs(del); 
+	}
+	rr[index]=srcs;
+	index = index + 1;
+	
+}
+
+teorSphereCalc=rr*sqrt(pi())*r; //square root of RCS is calculated for current radius of sphere
+
+//RCS is calculated by rising to power of two, result is changed from cm^2 to m^2
+//and saved to register 9 (our internal stuff)
+r9 = mag(teorSphereCalc*teorSphereCalc)/10000; 
+r10 = db(mag(teorSphereCalc*teorSphereCalc)/10000)/2;
+r11 = db(0.9*mag(teorSphereCalc*teorSphereCalc)/10000)/2;
+r12 = db(1.1*mag(teorSphereCalc*teorSphereCalc)/10000)/2;
+r13 = mag(rr);
+
