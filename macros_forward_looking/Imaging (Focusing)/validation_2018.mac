@@ -1,0 +1,100 @@
+//validation
+range = 2756;
+clear_variables();
+validationSignal = get_matrix_row(signals,0);
+validationSignal = 0;
+maxValue1 = 0;
+displayFrom = 0;
+first8 = false;
+for (ka = 0; ka < 4; ka = ka + 1)
+{
+	  rotrans = sqrt(transx[ka]*transx[ka] + transy[ka]*transy[ka] + range*range)*dNc - sqrt(transx[0]*transx[0] + transy[0]*transy[0] + range*range)*dNc;
+	  for (ia = 0; ia<num_of_steps; ia=ia+1)
+	  {
+		    rorec = sqrt(positionx[ia]*positionx[ia] + positiony[ia]*positiony[ia] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+		    currentSignal = push(lf(get_matrix_row(signals,ia + ka*16), 6,10,-6), -rotrans - rorec - delays[ia] - delays2[ka]);
+		    validationSignal = validationSignal + currentSignal;
+		    maxValue1 = maxValue1 + max(currentSignal, pos);
+
+	  }
+	  
+	  if (displayFrom == ka)
+	  {
+		    if (first8)
+		    {
+			      rorec = sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,0 + ka*16), 6,10,-6), -rotrans - rorec - delays[0] - delays2[ka]);
+			      correction = -rotrans - rorec - delays[0] - delays2[ka];
+			      out(correction);
+			      r1 = currentSignal;
+			      
+			      rorec = sqrt(positionx[1]*positionx[1] + positiony[1]*positiony[1] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,1 + ka*16), 6,10,-6), -rotrans - rorec - delays[1] - delays2[ka]);
+			      correction = -rotrans - rorec - delays[1] - delays2[ka];
+			      out(correction);
+			      r2 = currentSignal;
+			      
+			      rorec = sqrt(positionx[2]*positionx[2] + positiony[2]*positiony[2] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,2 + ka*16), 6,10,-6), -rotrans - rorec - delays[2] - delays2[ka]);
+			      r3 = currentSignal;
+			      
+			      rorec = sqrt(positionx[3]*positionx[3] + positiony[3]*positiony[3] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,3 + ka*16), 6,10,-6), -rotrans - rorec - delays[3] - delays2[ka]);
+			      r4 = currentSignal;
+			      
+			      rorec = sqrt(positionx[4]*positionx[4] + positiony[4]*positiony[4] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,4 + ka*16), 6,10,-6), -rotrans - rorec- delays[4] - delays2[ka]);
+			      r5 = currentSignal;
+			      
+			      rorec = sqrt(positionx[5]*positionx[5] + positiony[5]*positiony[5] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,5 + ka*16), 6,10,-6), -rotrans - rorec- delays[5] - delays2[ka]);
+			      r6 = currentSignal;
+			      
+			      rorec = sqrt(positionx[6]*positionx[6] + positiony[6]*positiony[6] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,6 + ka*16), 6,10,-6), -rotrans - rorec- delays[6] - delays2[ka]);
+			      r7 = currentSignal;
+			      
+			      rorec = sqrt(positionx[7]*positionx[7] + positiony[7]*positiony[7] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,7 + ka*16), 6,10,-6), -rotrans - rorec- delays[7] - delays2[ka]);
+			      r8 = currentSignal;
+		    }
+		    else
+		    {
+			      rorec = sqrt(positionx[8]*positionx[8] + positiony[8]*positiony[8] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,8 + ka*16), 6,10,-6), -rotrans - rorec - delays[8] - delays2[ka]);
+			      r1 = currentSignal;
+			      
+			      rorec = sqrt(positionx[9]*positionx[9] + positiony[9]*positiony[9] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,9 + ka*16), 6,10,-6), -rotrans - rorec - delays[9] - delays2[ka]);
+			      r2 = currentSignal;
+			      
+			      rorec = sqrt(positionx[10]*positionx[10] + positiony[10]*positiony[10] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,10 + ka*16), 6,10,-6), -rotrans - rorec - delays[10] - delays2[ka]);
+			      r3 = currentSignal;
+			      
+			      rorec = sqrt(positionx[11]*positionx[11] + positiony[11]*positiony[11] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,11 + ka*16), 6,10,-6), -rotrans - rorec - delays[11] - delays2[ka]);
+			      r4 = currentSignal;
+			      
+			      rorec = sqrt(positionx[12]*positionx[12] + positiony[12]*positiony[12] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,12 + ka*16), 6,10,-6), -rotrans - rorec- delays[12] - delays2[ka]);
+			      r5 = currentSignal;
+			      
+			      rorec = sqrt(positionx[13]*positionx[13] + positiony[13]*positiony[13] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,13 + ka*16), 6,10,-6), -rotrans - rorec- delays[13] - delays2[ka]);
+			      r6 = currentSignal;
+			      
+			      rorec = sqrt(positionx[14]*positionx[14] + positiony[14]*positiony[14] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,14 + ka*16), 6,10,-6), -rotrans - rorec- delays[14] - delays2[ka]);
+			      r7 = currentSignal;
+			      
+			      rorec = sqrt(positionx[15]*positionx[15] + positiony[15]*positiony[15] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+			      currentSignal = push(lf(get_matrix_row(signals,15 + ka*16), 6,10,-6), -rotrans - rorec- delays[15] - delays2[ka]);
+			      r8 = currentSignal;
+		    }
+	  }
+}
+maxValue2 = max(validationSignal,pos);
+r9 = validationSignal;
+quality = maxValue2/maxValue1;
+out(maxValue1, maxValue2, quality);

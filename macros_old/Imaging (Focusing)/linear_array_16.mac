@@ -1,0 +1,429 @@
+threshold = 0.71;
+make_threshold = false;
+object_step = 20; 
+range = 1640.0;
+MaxX = 50.0;
+MaxY = 50.0;
+MaxZ = 200.0;
+get_signals =false;
+measure_background =true;
+measure_object = true;
+corrected_delays =true;
+
+
+
+
+path = "c:/linear_array_variables/signals.sig";
+background_path = "c:/linear_array_variables/linear_background.sig";
+num_of_steps = 16;
+transx=Signal(1,4,False);
+transy=Signal(1,4,False);
+positionx = Signal(1,16,False);
+positiony = Signal(1,16,False);
+
+transx[0]=743;
+transy[0]=91;
+
+transx[1]=825;
+transy[1]=-91;
+
+transx[2]=-743;
+transy[2]=-91;
+
+transx[3]=-825;
+transy[3]=91;
+
+positionx[0]=526;
+positionx[1]=608;
+positionx[2]=364;
+positionx[3]=446;
+positionx[4]=202;
+positionx[5]=284;
+positionx[6]=40;
+positionx[7]=122;
+positionx[8]=-122;
+positionx[9]=-40;
+positionx[10]=-284;
+positionx[11]=-202;
+positionx[12]=-446;
+positionx[13]=-364;
+positionx[14]=-608;
+positionx[15]=-526;
+
+positiony[0]=91;
+positiony[1]=-91;
+positiony[2]=91;
+positiony[3]=-91;
+positiony[4]=91;
+positiony[5]=-91;
+positiony[6]=91;
+positiony[7]=-91;
+positiony[8]=91;
+positiony[9]=-91;
+positiony[10]=91;
+positiony[11]=-91;
+positiony[12]=91;
+positiony[13]=-91;
+positiony[14]=91;
+positiony[15]=-91;
+
+
+if (get_signals)
+{
+	if (measure_object)
+	{
+		sig_add(path,r1);
+		sig_deleteall(path);
+	}
+	if (measure_background)
+	{
+		sig_add(background_path,r1);
+		sig_deleteall(background_path);
+	}
+
+	W=WINDOW(ch1);
+	N=count(ch1);
+	shift = 5*N/W;
+	mt = matrix(num_of_steps*4,N);
+	A=matrix(MaxY,MaxX);
+	signals = matrix(64,N/2);
+	
+	if (measure_background)
+	{
+	set_trans_mask(15);
+	set_trans_mask(14);
+
+	pause(150);
+	acquire(255,255);
+
+
+	setmatrixrow(mt,0,r1);
+	setmatrixrow(mt,1,push(r1,-shift));
+	setmatrixrow(mt,2,r2);
+	setmatrixrow(mt,3,push(r2,-shift));
+	setmatrixrow(mt,4,r3);
+	setmatrixrow(mt,5,push(r3,-shift));
+	setmatrixrow(mt,6,r4);
+	setmatrixrow(mt,7,push(r4,-shift));
+	setmatrixrow(mt,8,r5);
+	setmatrixrow(mt,9,push(r5,-shift));
+	setmatrixrow(mt,10,r6);
+	setmatrixrow(mt,11,push(r6,-shift));
+	setmatrixrow(mt,12,r7);
+	setmatrixrow(mt,13,push(r7,-shift));
+	setmatrixrow(mt,14,r8);
+	setmatrixrow(mt,15,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(13);
+
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,16,r1);
+	setmatrixrow(mt,17,push(r1,-shift));
+	setmatrixrow(mt,18,r2);
+	setmatrixrow(mt,19,push(r2,-shift));
+	setmatrixrow(mt,20,r3);
+	setmatrixrow(mt,21,push(r3,-shift));
+	setmatrixrow(mt,22,r4);
+	setmatrixrow(mt,23,push(r4,-shift));
+	setmatrixrow(mt,24,r5);
+	setmatrixrow(mt,25,push(r5,-shift));
+	setmatrixrow(mt,26,r6);
+	setmatrixrow(mt,27,push(r6,-shift));
+	setmatrixrow(mt,28,r7);
+	setmatrixrow(mt,29,push(r7,-shift));
+	setmatrixrow(mt,30,r8);
+	setmatrixrow(mt,31,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(11);
+
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,32,r1);
+	setmatrixrow(mt,33,push(r1,-shift));
+	setmatrixrow(mt,34,r2);
+	setmatrixrow(mt,35,push(r2,-shift));
+	setmatrixrow(mt,36,r3);
+	setmatrixrow(mt,37,push(r3,-shift));
+	setmatrixrow(mt,38,r4);
+	setmatrixrow(mt,39,push(r4,-shift));
+	setmatrixrow(mt,40,r5);
+	setmatrixrow(mt,41,push(r5,-shift));
+	setmatrixrow(mt,42,r6);
+	setmatrixrow(mt,43,push(r6,-shift));
+	setmatrixrow(mt,44,r7);
+	setmatrixrow(mt,45,push(r7,-shift));
+	setmatrixrow(mt,46,r8);
+	setmatrixrow(mt,47,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(7);
+
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,48,r1);
+	setmatrixrow(mt,49,push(r1,-shift));
+	setmatrixrow(mt,50,r2);
+	setmatrixrow(mt,51,push(r2,-shift));
+	setmatrixrow(mt,52,r3);
+	setmatrixrow(mt,53,push(r3,-shift));
+	setmatrixrow(mt,54,r4);
+	setmatrixrow(mt,55,push(r4,-shift));
+	setmatrixrow(mt,56,r5);
+	setmatrixrow(mt,57,push(r5,-shift));
+	setmatrixrow(mt,58,r6);
+	setmatrixrow(mt,59,push(r6,-shift));
+	setmatrixrow(mt,60,r7);
+	setmatrixrow(mt,61,push(r7,-shift));
+	setmatrixrow(mt,62,r8);
+	setmatrixrow(mt,63,push(r8,-shift));
+	
+
+	for (ia = 0; ia < 64; ia = ia + 1)
+	{
+		sig_add(background_path,real(getmatrixrow(mt, ia)));
+	}
+
+	set_trans_mask(15);
+	set_trans_mask(14);
+
+	stop();
+	}
+	else
+	{
+		set_trans_mask(15);
+		set_trans_mask(14);
+		pause(150);
+
+	}
+
+	if (measure_object)
+	{
+	acquire(255,255);
+	setmatrixrow(mt,0,r1);
+	setmatrixrow(mt,1,push(r1,-shift));
+	setmatrixrow(mt,2,r2);
+	setmatrixrow(mt,3,push(r2,-shift));
+	setmatrixrow(mt,4,r3);
+	setmatrixrow(mt,5,push(r3,-shift));
+	setmatrixrow(mt,6,r4);
+	setmatrixrow(mt,7,push(r4,-shift));
+	setmatrixrow(mt,8,r5);
+	setmatrixrow(mt,9,push(r5,-shift));
+	setmatrixrow(mt,10,r6);
+	setmatrixrow(mt,11,push(r6,-shift));
+	setmatrixrow(mt,12,r7);
+	setmatrixrow(mt,13,push(r7,-shift));
+	setmatrixrow(mt,14,r8);
+	setmatrixrow(mt,15,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(13);
+
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,16,r1);
+	setmatrixrow(mt,17,push(r1,-shift));
+	setmatrixrow(mt,18,r2);
+	setmatrixrow(mt,19,push(r2,-shift));
+	setmatrixrow(mt,20,r3);
+	setmatrixrow(mt,21,push(r3,-shift));
+	setmatrixrow(mt,22,r4);
+	setmatrixrow(mt,23,push(r4,-shift));
+	setmatrixrow(mt,24,r5);
+	setmatrixrow(mt,25,push(r5,-shift));
+	setmatrixrow(mt,26,r6);
+	setmatrixrow(mt,27,push(r6,-shift));
+	setmatrixrow(mt,28,r7);
+	setmatrixrow(mt,29,push(r7,-shift));
+	setmatrixrow(mt,30,r8);
+	setmatrixrow(mt,31,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(11);
+
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,32,r1);
+	setmatrixrow(mt,33,push(r1,-shift));
+	setmatrixrow(mt,34,r2);
+	setmatrixrow(mt,35,push(r2,-shift));
+	setmatrixrow(mt,36,r3);
+	setmatrixrow(mt,37,push(r3,-shift));
+	setmatrixrow(mt,38,r4);
+	setmatrixrow(mt,39,push(r4,-shift));
+	setmatrixrow(mt,40,r5);
+	setmatrixrow(mt,41,push(r5,-shift));
+	setmatrixrow(mt,42,r6);
+	setmatrixrow(mt,43,push(r6,-shift));
+	setmatrixrow(mt,44,r7);
+	setmatrixrow(mt,45,push(r7,-shift));
+	setmatrixrow(mt,46,r8);
+	setmatrixrow(mt,47,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(7);
+	
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,48,r1);
+	setmatrixrow(mt,49,push(r1,-shift));
+	setmatrixrow(mt,50,r2);
+	setmatrixrow(mt,51,push(r2,-shift));
+	setmatrixrow(mt,52,r3);
+	setmatrixrow(mt,53,push(r3,-shift));
+	setmatrixrow(mt,54,r4);
+	setmatrixrow(mt,55,push(r4,-shift));
+	setmatrixrow(mt,56,r5);
+	setmatrixrow(mt,57,push(r5,-shift));
+	setmatrixrow(mt,58,r6);
+	setmatrixrow(mt,59,push(r6,-shift));
+	setmatrixrow(mt,60,r7);
+	setmatrixrow(mt,61,push(r7,-shift));
+	setmatrixrow(mt,62,r8);
+	setmatrixrow(mt,63,push(r8,-shift));
+
+
+		for (ia = 0; ia < 64; ia = ia + 1)
+		{
+			sig_add(path,real(getmatrixrow(mt, ia)));
+		}
+	}
+
+	for (ia = 0; ia < 64; ia = ia + 1)
+	{
+		setmatrixrow(mt,ia, SIG_READ(path,ia+1) - SIG_READ(background_path,ia+1));
+	}
+
+}
+else
+{
+	r1=SIG_READ(path,1);
+	W=WINDOW(r1);
+	N=count(r1);
+	mt = matrix(num_of_steps*4,N);
+	A=matrix(MaxY,MaxX);
+	signals = matrix(64,N/2);
+}
+
+
+c = 300.0; 
+ 
+dN = N/W; 
+dNc = dN/c; 
+
+nd = -autocorrelation_delay(sig_read(path,1), sig_read(background_path,1));
+outvar(nd);
+
+if (corrected_delays)
+{
+	delays = signal(1,16,false);
+	delays = SIG_READ("C:/linear_array_variables/delays.sig",1);
+	r11 = SIG_READ("C:/linear_array_variables/delays.sig",1);
+	delays2 = signal(1,16,false);
+	delays2 = SIG_READ("C:/linear_array_variables/delays_trans.sig",1);
+	r12 = SIG_READ("C:/linear_array_variables/delays_trans.sig",1);
+	for (ka = 0; ka < 4; ka = ka + 1)
+	{
+		for (ia = 0; ia<num_of_steps; ia=ia+1)
+		{	
+			setmatrixrow(signals,ia + ka*16, push(split(push(SIG_READ(path,ia+1 + ka*16),nd) - SIG_READ(background_path,ia+1 + ka*16),0,N/2-1),-delays[ia]-delays2[ka])  );
+
+		}
+	}
+}
+else
+{
+	for (ia = 0; ia<4*num_of_steps; ia=ia+1)
+	{	
+		setmatrixrow(signals,ia, split(push(SIG_READ(path,ia+1),nd) - SIG_READ(background_path,ia+1),0,N/2-1));
+	}
+}
+
+trans = 3;
+r1=real(getmatrixrow(signals,0 + 16*trans));
+r2=real(getmatrixrow(signals,1+ 16*trans));
+r3=real(getmatrixrow(signals,2+ 16*trans));
+r4=real(getmatrixrow(signals,3+ 16*trans));
+r5=real(getmatrixrow(signals,4+ 16*trans));
+r6=real(getmatrixrow(signals,5+ 16*trans));
+r7=real(getmatrixrow(signals,6+ 16*trans));
+r8=real(getmatrixrow(signals,7+ 16*trans));
+r9=real(getmatrixrow(signals,8+ 16*trans));
+r10=real(getmatrixrow(signals,9+ 16*trans));
+
+
+
+kirchhoff_migration(signals,A,positionx,positiony,transx,transy,W/2,object_step,range);
+ 
+pos=0;
+m=signal(1,MaxY,false);
+m2=signal(1,MaxY,false);
+for(k=0; k<MaxY;k=k+1)
+{
+	m[k]=max(real(getmatrixrow(A,k)),pos);
+	m2[k]=min(real(getmatrixrow(A,k)),pos);
+}
+r15 = m;
+mm=max(m,pos);
+r16 = real(getmatrixrow(A,pos));
+bla = max(r16,pos);
+x = -object_step*MaxX/2 + object_step*pos;
+outvar(x);
+mm = max(r16,pos);
+for(k=0; k<MaxY;k=k+1)
+{
+	tempy = real(getmatrixrow(A,k));
+	m[k]=tempy[pos];
+}
+
+mm = max(m,pos);
+
+zdir = signal(1,MaxZ,false);
+rsign = signal(1,MaxZ, false);
+
+
+z = range -object_step*MaxZ/2 ;
+y = object_step*MaxY/2 - object_step*pos;
+outvar(y);
+
+zdir = range_search(x,y,MaxZ,signals, positionx, positiony, transx, transy, W/2,object_step,range);
+
+r14 = zdir;
+r13 = rsign;
+
+
+
+for(k=0; k<MaxY;k=k+1)
+{
+	for(i=0; i<MaxX;i=i+1)
+	{
+		x=getmatrix(A,k,i) ;
+		x = x - 4;
+		if (x < 0)
+		{
+			x = 0;
+		}
+		setmatrix(A,k,i,x);
+
+	}
+}
+
+if (make_threshold)
+{
+	apply_threshold(A,threshold);
+}
+
+
+
+draw(A);
+
+draw_axis( -MaxX*object_step/2, object_step,MaxX/10, -MaxY*object_step/2, object_step, MaxY/10);

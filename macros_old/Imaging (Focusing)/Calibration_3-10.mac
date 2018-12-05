@@ -1,0 +1,326 @@
+range = 910;
+get_signals =true;
+
+
+num_of_steps = 16;
+transx=Signal(1,4,False);
+transy=Signal(1,4,False);
+positionx = Signal(1,16,False);
+positiony = Signal(1,16,False);
+
+transx[0]=212.5;
+transy[0]=237.5;
+
+transx[1]=237.5;
+transy[1]=-212.5;
+
+transx[2]=-212.5;
+transy[2]=-237.5;
+
+transx[3]=-237.5;
+transy[3]=212.5;
+
+
+positionx[0]=162.5;
+positionx[1]=137.5;
+positionx[2]=87.5;
+positionx[3]=37.5;
+positionx[4]=187.5;
+positionx[5]=112.5;
+positionx[6]=62.5;
+positionx[7]=12.5;
+positionx[8]=-162.5;
+positionx[9]=-137.5;
+positionx[10]=-87.5;
+positionx[11]=-37.5;
+positionx[12]=-187.5;
+positionx[13]=-112.5;
+positionx[14]=-62.5;
+positionx[15]=-12.5;
+
+positiony[0]=187.5;
+positiony[1]=112.5;
+positiony[2]=62.5;
+positiony[3]=12.5;
+positiony[4]=-162.5;
+positiony[5]=-137.5;
+positiony[6]=-87.5;
+positiony[7]=-37.5;
+positiony[8]=-187.5;
+positiony[9]=-112.5;
+positiony[10]=-62.5;
+positiony[11]=-12.5;
+positiony[12]=162.5;
+positiony[13]=137.5;
+positiony[14]=87.5;
+positiony[15]=37.5;
+
+if (get_signals)
+{
+	sig_add("c:/signals.sig", r1);
+	sig_deleteall("c:/signals.sig");
+
+	W=WINDOW(ch1);
+	N=count(ch1);
+	shift = 5*N/W;
+	mt = matrix(num_of_steps*4,N);
+	signals = matrix(64,N/2);
+
+	set_trans_mask(15);
+	set_trans_mask(14);
+	pause(150);
+	acquire(255,255);
+
+
+	setmatrixrow(mt,0,r1);
+	setmatrixrow(mt,1,push(r1,-shift));
+	setmatrixrow(mt,2,r2);
+	setmatrixrow(mt,3,push(r2,-shift));
+	setmatrixrow(mt,4,r3);
+	setmatrixrow(mt,5,push(r3,-shift));
+	setmatrixrow(mt,6,r4);
+	setmatrixrow(mt,7,push(r4,-shift));
+	setmatrixrow(mt,8,r5);
+	setmatrixrow(mt,9,push(r5,-shift));
+	setmatrixrow(mt,10,r6);
+	setmatrixrow(mt,11,push(r6,-shift));
+	setmatrixrow(mt,12,r7);
+	setmatrixrow(mt,13,push(r7,-shift));
+	setmatrixrow(mt,14,r8);
+	setmatrixrow(mt,15,push(r8,-shift));
+	
+	set_trans_mask(15);
+	set_trans_mask(13);
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,16,r1);
+	setmatrixrow(mt,17,push(r1,-shift));
+	setmatrixrow(mt,18,r2);
+	setmatrixrow(mt,19,push(r2,-shift));
+	setmatrixrow(mt,20,r3);
+	setmatrixrow(mt,21,push(r3,-shift));
+	setmatrixrow(mt,22,r4);
+	setmatrixrow(mt,23,push(r4,-shift));
+	setmatrixrow(mt,24,r5);
+	setmatrixrow(mt,25,push(r5,-shift));
+	setmatrixrow(mt,26,r6);
+	setmatrixrow(mt,27,push(r6,-shift));
+	setmatrixrow(mt,28,r7);
+	setmatrixrow(mt,29,push(r7,-shift));
+	setmatrixrow(mt,30,r8);
+	setmatrixrow(mt,31,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(11);
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,32,r1);
+	setmatrixrow(mt,33,push(r1,-shift));
+	setmatrixrow(mt,34,r2);
+	setmatrixrow(mt,35,push(r2,-shift));
+	setmatrixrow(mt,36,r3);
+	setmatrixrow(mt,37,push(r3,-shift));
+	setmatrixrow(mt,38,r4);
+	setmatrixrow(mt,39,push(r4,-shift));
+	setmatrixrow(mt,40,r5);
+	setmatrixrow(mt,41,push(r5,-shift));
+	setmatrixrow(mt,42,r6);
+	setmatrixrow(mt,43,push(r6,-shift));
+	setmatrixrow(mt,44,r7);
+	setmatrixrow(mt,45,push(r7,-shift));
+	setmatrixrow(mt,46,r8);
+	setmatrixrow(mt,47,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(7);
+	pause(150);
+	acquire(255,255);
+	setmatrixrow(mt,48,r1);
+	setmatrixrow(mt,49,push(r1,-shift));
+	setmatrixrow(mt,50,r2);
+	setmatrixrow(mt,51,push(r2,-shift));
+	setmatrixrow(mt,52,r3);
+	setmatrixrow(mt,53,push(r3,-shift));
+	setmatrixrow(mt,54,r4);
+	setmatrixrow(mt,55,push(r4,-shift));
+	setmatrixrow(mt,56,r5);
+	setmatrixrow(mt,57,push(r5,-shift));
+	setmatrixrow(mt,58,r6);
+	setmatrixrow(mt,59,push(r6,-shift));
+	setmatrixrow(mt,60,r7);
+	setmatrixrow(mt,61,push(r7,-shift));
+	setmatrixrow(mt,62,r8);
+	setmatrixrow(mt,63,push(r8,-shift));
+
+	set_trans_mask(15);
+	set_trans_mask(14);
+	stop();
+
+	acquire(255,255);
+
+	setmatrixrow(mt,0, r1 - real(getmatrixrow(mt, 0)));
+	setmatrixrow(mt,1, push(r1,-shift) - real(getmatrixrow(mt, 1)));
+	setmatrixrow(mt,2, r2 - real(getmatrixrow(mt, 2)));
+	setmatrixrow(mt,3, push(r2,-shift) - real(getmatrixrow(mt, 3)));
+	setmatrixrow(mt,4, r3 - real(getmatrixrow(mt, 4)));
+	setmatrixrow(mt,5, push(r3,-shift) - real(getmatrixrow(mt, 5)));
+	setmatrixrow(mt,6, r4 - real(getmatrixrow(mt, 6)));
+	setmatrixrow(mt,7, push(r4,-shift) - real(getmatrixrow(mt, 7)));
+	setmatrixrow(mt,8, r5 - real(getmatrixrow(mt, 8)));
+	setmatrixrow(mt,9, push(r5,-shift) - real(getmatrixrow(mt, 9)));
+	setmatrixrow(mt,10, r6 - real(getmatrixrow(mt, 10)));
+	setmatrixrow(mt,11, push(r6,-shift) - real(getmatrixrow(mt, 11)));
+	setmatrixrow(mt,12, r7 - real(getmatrixrow(mt, 12)));
+	setmatrixrow(mt,13, push(r7,-shift) - real(getmatrixrow(mt, 13)));
+	setmatrixrow(mt,14, r8 - real(getmatrixrow(mt, 14)));
+	setmatrixrow(mt,15, push(r8,-shift) - real(getmatrixrow(mt, 15)));
+
+	set_trans_mask(15);
+	set_trans_mask(13);
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,16, r1 - real(getmatrixrow(mt, 16)));
+	setmatrixrow(mt,17, push(r1,-shift) - real(getmatrixrow(mt, 17)));
+	setmatrixrow(mt,18, r2 - real(getmatrixrow(mt, 18)));
+	setmatrixrow(mt,19, push(r2,-shift) - real(getmatrixrow(mt, 19)));
+	setmatrixrow(mt,20, r3 - real(getmatrixrow(mt, 20)));
+	setmatrixrow(mt,21, push(r3,-shift) - real(getmatrixrow(mt, 21)));
+	setmatrixrow(mt,22, r4 - real(getmatrixrow(mt, 22)));
+	setmatrixrow(mt,23, push(r4,-shift) - real(getmatrixrow(mt, 23)));
+	setmatrixrow(mt,24, r5 - real(getmatrixrow(mt, 24)));
+	setmatrixrow(mt,25, push(r5,-shift) - real(getmatrixrow(mt, 25)));
+	setmatrixrow(mt,26, r6 - real(getmatrixrow(mt, 26)));
+	setmatrixrow(mt,27, push(r6,-shift) - real(getmatrixrow(mt, 27)));
+	setmatrixrow(mt,28, r7 - real(getmatrixrow(mt, 28)));
+	setmatrixrow(mt,29, push(r7,-shift) - real(getmatrixrow(mt, 29)));
+	setmatrixrow(mt,30, r8 - real(getmatrixrow(mt, 30)));
+	setmatrixrow(mt,31, push(r8,-shift) - real(getmatrixrow(mt, 31)));
+
+
+	set_trans_mask(15);
+	set_trans_mask(11);
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,32, r1 - real(getmatrixrow(mt, 32)));
+	setmatrixrow(mt,33, push(r1,-shift) - real(getmatrixrow(mt, 33)));
+	setmatrixrow(mt,34, r2 - real(getmatrixrow(mt, 34)));
+	setmatrixrow(mt,35, push(r2,-shift) - real(getmatrixrow(mt, 35)));
+	setmatrixrow(mt,36, r3 - real(getmatrixrow(mt, 36)));
+	setmatrixrow(mt,37, push(r3,-shift) - real(getmatrixrow(mt, 37)));
+	setmatrixrow(mt,38, r4 - real(getmatrixrow(mt, 38)));
+	setmatrixrow(mt,39, push(r4,-shift) - real(getmatrixrow(mt, 39)));
+	setmatrixrow(mt,40, r5 - real(getmatrixrow(mt, 40)));
+	setmatrixrow(mt,41, push(r5,-shift) - real(getmatrixrow(mt, 41)));
+	setmatrixrow(mt,42, r6 - real(getmatrixrow(mt, 42)));
+	setmatrixrow(mt,43, push(r6,-shift) - real(getmatrixrow(mt, 43)));
+	setmatrixrow(mt,44, r7 - real(getmatrixrow(mt, 44)));
+	setmatrixrow(mt,45, push(r7,-shift) - real(getmatrixrow(mt, 45)));
+	setmatrixrow(mt,46, r8 - real(getmatrixrow(mt, 46)));
+	setmatrixrow(mt,47, push(r8,-shift) - real(getmatrixrow(mt, 47)));
+
+	set_trans_mask(15);
+	set_trans_mask(7);
+	pause(150);
+	acquire(255,255);
+
+	setmatrixrow(mt,48, r1 - real(getmatrixrow(mt, 48)));
+	setmatrixrow(mt,49, push(r1,-shift) - real(getmatrixrow(mt, 49)));
+	setmatrixrow(mt,50, r2 - real(getmatrixrow(mt, 50)));
+	setmatrixrow(mt,51, push(r2,-shift) - real(getmatrixrow(mt, 51)));
+	setmatrixrow(mt,52, r3 - real(getmatrixrow(mt, 52)));
+	setmatrixrow(mt,53, push(r3,-shift) - real(getmatrixrow(mt, 53)));
+	setmatrixrow(mt,54, r4 - real(getmatrixrow(mt, 54)));
+	setmatrixrow(mt,55, push(r4,-shift) - real(getmatrixrow(mt, 55)));
+	setmatrixrow(mt,56, r5 - real(getmatrixrow(mt, 56)));
+	setmatrixrow(mt,57, push(r5,-shift) - real(getmatrixrow(mt, 57)));
+	setmatrixrow(mt,58, r6 - real(getmatrixrow(mt, 58)));
+	setmatrixrow(mt,59, push(r6,-shift) - real(getmatrixrow(mt, 59)));
+	setmatrixrow(mt,60, r7 - real(getmatrixrow(mt, 60)));
+	setmatrixrow(mt,61, push(r7,-shift) - real(getmatrixrow(mt, 61)));
+	setmatrixrow(mt,62, r8 - real(getmatrixrow(mt, 62)));
+	setmatrixrow(mt,63, push(r8,-shift) - real(getmatrixrow(mt, 63)));
+
+
+	for (ia = 0; ia < 64; ia = ia + 1)
+	{
+		sig_add("c:\signals.sig",real(getmatrixrow(mt, ia)));
+	}
+}
+else
+{
+	W=WINDOW(ch1);
+	N=count(ch1);
+	shift = 5*N/W;
+	mt = matrix(num_of_steps*4,N);
+	signals = matrix(64,N/2);
+}
+
+c = 300.0; 
+ 
+dN = N/W; 
+dNc = dN/c; 
+
+for (ia = 0; ia<4*num_of_steps; ia=ia+1)
+{
+	setmatrixrow(signals,ia, split(SIG_READ("C:\signals.sig",ia+1),0,N/2-1));	
+}
+
+r1 = real(getmatrixrow(signals,0));
+r2 = real(getmatrixrow(signals,1));
+r3 = real(getmatrixrow(signals,2));
+r4 = real(getmatrixrow(signals,3));
+r5 = real(getmatrixrow(signals,4));
+r6 = real(getmatrixrow(signals,5));
+r7 = real(getmatrixrow(signals,6));
+r8 = real(getmatrixrow(signals,7));
+r9 = real(getmatrixrow(signals,8));
+r10 = real(getmatrixrow(signals,9));
+r11 = real(getmatrixrow(signals,10));
+r12 = real(getmatrixrow(signals,11));
+
+ro = signal(1,16,false);
+ro2 = signal(1,4,false);
+delays = signal(1,16,false);
+delays2 = signal(1,4,false);
+pos = 0;
+
+for (ia = 0; ia<num_of_steps; ia=ia+1)
+{
+
+	ro[ia] = sqrt(positionx[ia]*positionx[ia] + positiony[ia]*positiony[ia] + range*range)*dNc - sqrt(positionx[0]*positionx[0] + positiony[0]*positiony[0] + range*range)*dNc;
+
+
+	m = max(real(getmatrixrow(signals,ia)),pos);
+	delays[ia] = pos;
+}
+pos = delays[0];
+for (ia = 0; ia<num_of_steps; ia=ia+1)
+{
+	delays[ia] = delays[ia] - pos - ro[ia];
+}
+
+r15 = delays;
+sig_deleteall("c:\delays.sig");
+sig_add("c:\delays.sig",delays);
+
+for (ia = 0; ia<4; ia=ia+1)
+{
+
+	ro2[ia] = sqrt(transx[ia]*transx[ia] + transy[ia]*transy[ia] + range*range)*dNc - sqrt(transx[0]*transx[0] + transy[0]*transy[0] + range*range)*dNc;
+
+	m = max(real(getmatrixrow(signals,ia*16)),pos);
+	delays2[ia] = pos;
+}
+pos = delays2[0];
+for (ia = 0; ia<4; ia=ia+1)
+{
+	delays2[ia] = delays2[ia] - pos -ro2[ia];
+}
+
+r16 = delays2;
+sig_deleteall("c:\delays_trans.sig");
+sig_add("c:\delays_trans.sig",delays2);

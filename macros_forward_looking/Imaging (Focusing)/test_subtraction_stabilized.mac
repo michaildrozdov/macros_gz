@@ -1,0 +1,98 @@
+//sleep(6000);
+freqMax = 11;
+threshold = 100;
+acquire(1,base1, 2, base2, 3, base3,4,base4,5,base5, 6, base6, 7, base7,8,base8);
+
+N=count(base1);
+T = window(base1);
+
+n1=floor(N/10);
+n2=N-floor(N/10);
+w=base1;
+w=1;
+
+for(i=0;i<n1;i=i+1)
+{
+	  w[i]=sqr(sqr(sin(i/n1*pi()/2)));
+}
+
+upper = N - n2;
+for(i=0;i< upper;i=i+1)
+{
+	  index = n2 + i;
+	  w[index]=sqr(sqr(sin(pi()*(upper - i)/(upper)/2)));
+}
+base11 = lf(base8,4,6,-8);
+pos = 0;
+maxVal = max(base11,pos);
+for (ia = 0; ia < N; ia = ia + 1)
+{
+	  if(base11[ia] < maxVal - threshold)
+	  {
+		    base11[ia] = 0;
+	  }
+	  else
+	  {
+		    base11[ia] = base11[ia] - (maxVal - threshold);
+	  }
+}
+r10 = base11;
+pause();
+//sleep(6000);
+while(1)
+{
+	  acquire(1,cur1, 2, cur2, 3, cur3,4,cur4,5,cur5, 6,cur6, 7, cur7,8,cur8);
+	
+	  ref = lf(cur8,4,6,-8);
+	  pos = 0;
+	  maxVal = max(ref,pos);
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    if(ref[ia] < maxVal - threshold)
+		    {
+			      ref[ia] = 0;
+		    }
+		    else
+		    {
+			      ref[ia] = ref[ia] - (maxVal - threshold);
+		    }
+	  }
+	  r11 = ref;
+	  dt = 0;
+	  //(dt)=difference2(base11,ref);
+	  compare1 = lf(base8,freqMax,freqMax*1.5,-8);
+	  compare2 = lf(cur8,freqMax,freqMax*1.5,-8);
+	  (dt)=difference2(compare1,compare2);
+	  dt = -dt;
+
+	  cur11=push2(cur1,dt);
+	  cur21=push2(cur2,dt);
+	  cur31=push2(cur3,dt);
+	  cur41=push2(cur4,dt);
+	  cur51=push2(cur5,dt);
+	  cur61=push2(cur6,dt);
+	  cur71=push2(cur7,dt);
+	  cur81=push2(cur8,dt);
+
+	
+	
+	r1 = lf(cur11 - base1,freqMax,freqMax*1.5,-6);
+	r2 = lf(cur21 - base2,freqMax,freqMax*1.5,-6);
+	r3 = lf(cur31 - base3,freqMax,freqMax*1.5,-6);
+	r4 = lf(cur41 - base4,freqMax,freqMax*1.5,-6);
+	r5 = lf(cur51 - base5,freqMax,freqMax*1.5,-6);
+	r6 = lf(cur61 - base6,freqMax,freqMax*1.5,-6);
+	r7 = lf(cur71 - base7,freqMax,freqMax*1.5,-6);
+	r8 = lf(cur81 - base8,freqMax,freqMax*1.5,-6);
+	
+	maxVal = max(abs(lf(cur11,freqMax,freqMax*1.5,-6)), pos);
+	r1 = r1/maxVal*1000;
+	maxVal = max(abs(lf(cur21,freqMax,freqMax*1.5,-6)), pos);
+	r2 = r2/maxVal*1000;
+	r12 = db(mag(fft(r1)));
+	//if (maxVal > 1)
+	//{
+	  //pause();
+	//}
+}
+

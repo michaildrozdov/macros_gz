@@ -1,0 +1,479 @@
+clear_variables();
+threshold = 0.71;
+maxFreq = 2.5;
+make_threshold = false;
+object_step = 40; 
+range = 2750;
+MaxX = 100.0;
+MaxY = 100.0;
+MaxZ = 100.0;
+get_signals = true;
+measure_background = true;
+measure_object = true;
+corrected_delays = true;
+trans = 3;
+
+
+
+path = "C:/Users/User1/Documents/signals.sig";
+background_path = "C:/Users/User1/Documents/linear_background.sig";
+num_of_steps = 16;
+transx=Signal(1,4,False);
+transy=Signal(1,4,False);
+positionx = Signal(1,16,False);
+positiony = Signal(1,16,False);
+
+transx[0]=743;
+transy[0]=91;
+
+transx[1]=825;
+transy[1]=-91;
+
+transx[2]=-743;
+transy[2]=-91;
+
+transx[3]=-825;
+transy[3]=91;
+
+positionx[0]=526;
+positionx[1]=608;
+positionx[2]=364;
+positionx[3]=446;
+positionx[4]=202;
+positionx[5]=284;
+positionx[6]=40;
+positionx[7]=122;
+positionx[8]=-122;
+positionx[9]=-40;
+positionx[10]=-284;
+positionx[11]=-202;
+positionx[12]=-446;
+positionx[13]=-364;
+positionx[14]=-608;
+positionx[15]=-526;
+
+positiony[0]=91;
+positiony[1]=-91;
+positiony[2]=91;
+positiony[3]=-91;
+positiony[4]=91;
+positiony[5]=-91;
+positiony[6]=91;
+positiony[7]=-91;
+positiony[8]=91;
+positiony[9]=-91;
+positiony[10]=91;
+positiony[11]=-91;
+positiony[12]=91;
+positiony[13]=-91;
+positiony[14]=91;
+positiony[15]=-91;
+
+
+if (get_signals)
+{
+	if (measure_object)
+	{
+		sig_add(path,r1);
+		sig_delete_all(path);
+	}
+	if (measure_background)
+	{
+		sig_add(background_path,r1);
+		sig_delete_all(background_path);
+	}
+
+	W=WINDOW(ch1);
+	N=count(ch1);
+	shift = 5*N/W;
+	mt = matrix(num_of_steps*4,N);
+	A=matrix(MaxY,MaxX);
+	signals = matrix(64,N/2);
+	
+	if (measure_background)
+	{
+	sleep(4000);
+		  set_trans_mask(15);
+		  set_trans_mask(14);
+		  sleep(550);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+
+		  set_matrix_row(mt,0,back1);
+		  set_matrix_row(mt,1,push(back1,-shift));
+		  set_matrix_row(mt,2,back2);
+		  set_matrix_row(mt,3,push(back2,-shift));
+		  set_matrix_row(mt,4,back3);
+		  set_matrix_row(mt,5,push(back3,-shift));
+		  set_matrix_row(mt,6,back4);
+		  set_matrix_row(mt,7,push(back4,-shift));
+		  set_matrix_row(mt,8,back5);
+		  set_matrix_row(mt,9,push(back5,-shift));
+		  set_matrix_row(mt,10,back6);
+		  set_matrix_row(mt,11,push(back6,-shift));
+		  set_matrix_row(mt,12,back7);
+		  set_matrix_row(mt,13,push(back7,-shift));
+		  set_matrix_row(mt,14,back8);
+		  set_matrix_row(mt,15,push(back8,-shift));
+		  
+		  set_trans_mask(15);
+		  set_trans_mask(13);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		  set_matrix_row(mt,16,back1);
+		  set_matrix_row(mt,17,push(back1,-shift));
+		  set_matrix_row(mt,18,back2);
+		  set_matrix_row(mt,19,push(back2,-shift));
+		  set_matrix_row(mt,20,back3);
+		  set_matrix_row(mt,21,push(back3,-shift));
+		  set_matrix_row(mt,22,back4);
+		  set_matrix_row(mt,23,push(back4,-shift));
+		  set_matrix_row(mt,24,back5);
+		  set_matrix_row(mt,25,push(back5,-shift));
+		  set_matrix_row(mt,26,back6);
+		  set_matrix_row(mt,27,push(back6,-shift));
+		  set_matrix_row(mt,28,back7);
+		  set_matrix_row(mt,29,push(back7,-shift));
+		  set_matrix_row(mt,30,back8);
+		  set_matrix_row(mt,31,push(back8,-shift));
+
+		  set_trans_mask(15);
+		  set_trans_mask(11);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		  set_matrix_row(mt,32,back1);
+		  set_matrix_row(mt,33,push(back1,-shift));
+		  set_matrix_row(mt,34,back2);
+		  set_matrix_row(mt,35,push(back2,-shift));
+		  set_matrix_row(mt,36,back3);
+		  set_matrix_row(mt,37,push(back3,-shift));
+		  set_matrix_row(mt,38,back4);
+		  set_matrix_row(mt,39,push(back4,-shift));
+		  set_matrix_row(mt,40,back5);
+		  set_matrix_row(mt,41,push(back5,-shift));
+		  set_matrix_row(mt,42,back6);
+		  set_matrix_row(mt,43,push(back6,-shift));
+		  set_matrix_row(mt,44,back7);
+		  set_matrix_row(mt,45,push(back7,-shift));
+		  set_matrix_row(mt,46,back8);
+		  set_matrix_row(mt,47,push(back8,-shift));
+
+		  set_trans_mask(15);
+		  set_trans_mask(7);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+
+		  set_matrix_row(mt,48,back1);
+		  set_matrix_row(mt,49,push(back1,-shift));
+		  set_matrix_row(mt,50,back2);
+		  set_matrix_row(mt,51,push(back2,-shift));
+		  set_matrix_row(mt,52,back3);
+		  set_matrix_row(mt,53,push(back3,-shift));
+		  set_matrix_row(mt,54,back4);
+		  set_matrix_row(mt,55,push(back4,-shift));
+		  set_matrix_row(mt,56,back5);
+		  set_matrix_row(mt,57,push(back5,-shift));
+		  set_matrix_row(mt,58,back6);
+		  set_matrix_row(mt,59,push(back6,-shift));
+		  set_matrix_row(mt,60,back7);
+		  set_matrix_row(mt,61,push(back7,-shift));
+		  set_matrix_row(mt,62,back8);
+		  set_matrix_row(mt,63,push(back8,-shift));
+
+
+		  for (ia = 0; ia < 64; ia = ia + 1)
+		  {
+			  sig_add(background_path,get_matrix_row(mt, ia));
+		  }
+
+		  set_trans_mask(15);
+		  set_trans_mask(14);
+
+		  pause();
+		  sleep(4000);
+	}
+	else
+	{
+		set_trans_mask(15);
+		set_trans_mask(14);
+		sleep(150);
+		sleep(4000);
+
+	}
+
+	if (measure_object)
+	{
+		    //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+
+		  set_matrix_row(mt,0,back1);
+		  set_matrix_row(mt,1,push(back1,-shift));
+		  set_matrix_row(mt,2,back2);
+		  set_matrix_row(mt,3,push(back2,-shift));
+		  set_matrix_row(mt,4,back3);
+		  set_matrix_row(mt,5,push(back3,-shift));
+		  set_matrix_row(mt,6,back4);
+		  set_matrix_row(mt,7,push(back4,-shift));
+		  set_matrix_row(mt,8,back5);
+		  set_matrix_row(mt,9,push(back5,-shift));
+		  set_matrix_row(mt,10,back6);
+		  set_matrix_row(mt,11,push(back6,-shift));
+		  set_matrix_row(mt,12,back7);
+		  set_matrix_row(mt,13,push(back7,-shift));
+		  set_matrix_row(mt,14,back8);
+		  set_matrix_row(mt,15,push(back8,-shift));
+		  
+		  set_trans_mask(15);
+		  set_trans_mask(13);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		  set_matrix_row(mt,16,back1);
+		  set_matrix_row(mt,17,push(back1,-shift));
+		  set_matrix_row(mt,18,back2);
+		  set_matrix_row(mt,19,push(back2,-shift));
+		  set_matrix_row(mt,20,back3);
+		  set_matrix_row(mt,21,push(back3,-shift));
+		  set_matrix_row(mt,22,back4);
+		  set_matrix_row(mt,23,push(back4,-shift));
+		  set_matrix_row(mt,24,back5);
+		  set_matrix_row(mt,25,push(back5,-shift));
+		  set_matrix_row(mt,26,back6);
+		  set_matrix_row(mt,27,push(back6,-shift));
+		  set_matrix_row(mt,28,back7);
+		  set_matrix_row(mt,29,push(back7,-shift));
+		  set_matrix_row(mt,30,back8);
+		  set_matrix_row(mt,31,push(back8,-shift));
+
+		  set_trans_mask(15);
+		  set_trans_mask(11);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		  set_matrix_row(mt,32,back1);
+		  set_matrix_row(mt,33,push(back1,-shift));
+		  set_matrix_row(mt,34,back2);
+		  set_matrix_row(mt,35,push(back2,-shift));
+		  set_matrix_row(mt,36,back3);
+		  set_matrix_row(mt,37,push(back3,-shift));
+		  set_matrix_row(mt,38,back4);
+		  set_matrix_row(mt,39,push(back4,-shift));
+		  set_matrix_row(mt,40,back5);
+		  set_matrix_row(mt,41,push(back5,-shift));
+		  set_matrix_row(mt,42,back6);
+		  set_matrix_row(mt,43,push(back6,-shift));
+		  set_matrix_row(mt,44,back7);
+		  set_matrix_row(mt,45,push(back7,-shift));
+		  set_matrix_row(mt,46,back8);
+		  set_matrix_row(mt,47,push(back8,-shift));
+
+		  set_trans_mask(15);
+		  set_trans_mask(7);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+
+		  set_matrix_row(mt,48,back1);
+		  set_matrix_row(mt,49,push(back1,-shift));
+		  set_matrix_row(mt,50,back2);
+		  set_matrix_row(mt,51,push(back2,-shift));
+		  set_matrix_row(mt,52,back3);
+		  set_matrix_row(mt,53,push(back3,-shift));
+		  set_matrix_row(mt,54,back4);
+		  set_matrix_row(mt,55,push(back4,-shift));
+		  set_matrix_row(mt,56,back5);
+		  set_matrix_row(mt,57,push(back5,-shift));
+		  set_matrix_row(mt,58,back6);
+		  set_matrix_row(mt,59,push(back6,-shift));
+		  set_matrix_row(mt,60,back7);
+		  set_matrix_row(mt,61,push(back7,-shift));
+		  set_matrix_row(mt,62,back8);
+		  set_matrix_row(mt,63,push(back8,-shift));
+
+
+		for (ia = 0; ia < 64; ia = ia + 1)
+		{
+			sig_add(path,get_matrix_row(mt, ia));
+		}
+	}
+
+	for (ia = 0; ia < 64; ia = ia + 1)
+	{
+		set_matrix_row(mt,ia, SIG_READ(path,ia) - SIG_READ(background_path,ia));
+	}
+
+}
+else
+{
+	r1=SIG_READ(path,0);
+	W=WINDOW(r1);
+	N=count(r1);
+	mt = matrix(num_of_steps*4,N);
+	A=matrix(MaxY,MaxX);
+	signals = matrix(64,N/2);
+}
+
+
+c = 300.0; 
+ 
+dN = N/W; 
+dNc = dN/c; 
+nd = signal(1,4,false);
+nd[0] = -autocorrelation_delay(sig_read(path,0), sig_read(background_path,0));
+nd[1] = -autocorrelation_delay(sig_read(path,16), sig_read(background_path,16));
+nd[2] = -autocorrelation_delay(sig_read(path,47), sig_read(background_path,47));
+nd[3] = -autocorrelation_delay(sig_read(path,63), sig_read(background_path,63));
+nd1 = nd[0];
+nd2 = nd[1];
+nd3 = nd[2];
+nd4 = nd[3];
+out(nd1, nd2, nd3, nd4);
+
+tempSignal = signal(W/2, N/2, false);
+if (corrected_delays)
+{
+	delays = signal(1,16,false);
+	delays = SIG_READ("C:/Users/User1/Documents/delays.sig",0);
+	r11 = delays;
+	delays2 = signal(1,16,false);
+	delays2 = SIG_READ("C:/Users/User1/Documents/delays_trans.sig",0);
+	r12 = delays2;
+	for (ka = 0; ka < 4; ka = ka + 1)
+	{
+		for (ia = 0; ia<num_of_steps; ia=ia+1)
+		{	
+			tempRead = push(SIG_READ(path,ia + ka*16), nd[ka]) - SIG_READ(background_path,ia + ka*16);
+			//tempRead = push(SIG_READ(path,ia + ka*16), nd[ka]);
+			insert(tempRead, 0, N/2-1, tempSignal, 0);
+			tempsp = fft(tempSignal);
+			tempsp[0] = 0;
+			tempsp[1] = 0;
+			tempsp[2] = 0;
+			tempsp[3] = 0;
+			tempSignal = ifft(tempsp);
+			set_matrix_row(signals,ia + ka*16, 2*lf(push(tempSignal,-delays[ia]-delays2[ka]),maxFreq,maxFreq*1.5,-6));
+
+		}
+	}
+}
+else
+{
+	for (ia = 0; ia<4*num_of_steps; ia=ia+1)
+	{	
+		    tempRead = push(SIG_READ(path,ia), nd[0]) - SIG_READ(background_path,ia);
+		    insert(tempRead, 0, N/2-1, tempSignal, 0);
+		    tempsp = fft(tempSignal);
+			tempsp[0] = 0;
+			tempsp[1] = 0;
+			tempsp[2] = 0;
+			tempsp[3] = 0;
+			tempSignal = ifft(tempsp);
+		    set_matrix_row(signals,ia, 2*lf(tempSignal,maxFreq,maxFreq*1.5,-6));
+	}
+}
+
+
+r1=get_matrix_row(signals,0 + 16*trans);
+r2=get_matrix_row(signals,1+ 16*trans);
+r3=get_matrix_row(signals,2+ 16*trans);
+r4=get_matrix_row(signals,3+ 16*trans);
+r5=get_matrix_row(signals,4+ 16*trans);
+r6=get_matrix_row(signals,5+ 16*trans);
+r7=get_matrix_row(signals,6+ 16*trans);
+r8=get_matrix_row(signals,7+ 16*trans);
+r9=get_matrix_row(signals,8+ 16*trans);
+r10=get_matrix_row(signals,9+ 16*trans);
+
+
+
+kirchhoff_migration(signals,A,positionx,positiony,transx,transy,W/2,object_step,range);
+ 
+pos=0;
+m=signal(1,MaxY,false);
+m2=signal(1,MaxY,false);
+for(k=0; k<MaxY;k=k+1)
+{
+	m[k]=max(get_matrix_row(A,k),pos);
+	m2[k]=min(get_matrix_row(A,k),pos);
+}
+r15 = m;
+mm=max(m,pos);
+r16 = get_matrix_row(A,pos);
+r16count = count(r16);
+temp = signal(1, r16count, false);
+
+
+for (ia = 0; ia < r16cont; ia = ia + 1)
+{
+	  temp[ia] = r16[ia];
+}
+r16 = temp;
+bla = max(r16,pos);
+x = -object_step*MaxX/2 + object_step*pos;
+if (bla > 4)
+{
+	  out(x);
+}
+mm = max(r16,pos);
+for(k=0; k<MaxY;k=k+1)
+{
+	tempy = get_matrix_row(A,k);
+	m[k]=tempy[pos];
+}
+
+mm = max(m,pos);
+
+zdir = signal(1,MaxZ,false);
+rsign = signal(1,MaxZ, false);
+
+
+z = range -object_step*MaxZ/2 ;
+y = object_step*MaxY/2 - object_step*pos;
+if (bla > 4)
+{
+	  out(y);
+}
+
+//zdir = range_search(x,y,MaxZ,signals, positionx, positiony, transx, transy, W/2,object_step,range);
+
+//r14 = zdir;
+r13 = rsign;
+
+
+
+for(k=0; k<MaxY;k=k+1)
+{
+	for(i=0; i<MaxX;i=i+1)
+	{
+		x=get_matrix(A,k,i) ;
+		x = x - 4;
+		if (x < 0)
+		{
+			x = 0;
+		}
+		set_matrix(A,k,i,x);
+
+	}
+}
+
+//if (make_threshold)
+//{
+	//apply_threshold(A,threshold);
+//}
+
+
+
+draw(A);
+
+draw_axis( -MaxX*object_step/2, object_step,MaxX/10, -MaxY*object_step/2, object_step, MaxY/10);
