@@ -124,13 +124,16 @@ stdevStep = 2*floor(N/skipSize/5/2);//when calculating variable threshold, it is
 //one calculation
 thresholdValuesLocal = signal(1, N/skipSize, false);//array, which will be used to store variable (with point in signal) threshold
 stddevLocalCalcArray = signal(1, stdevStep, false);//array to store region of power signal for quick mean and stdev calculation
-meanValues1 = prev1;
-meanValues2 = sig_read(saveTo,parametersNumber+1);
-stdValues1 = signal(T,N,false);
-stdValues1 = 1000;
-stdValues2 = stdValues1;
-mask1 = signal(T,N,false);
-mask2 = signal(T,N,false);
+meanValues = matrix(8,N);
+stdValuesArr = signal(T,N,false);
+stdValuesArr = 1000;
+stdValues = matrix(8,N);
+
+for (k = 0; k < 8; k = k+1)
+{
+	  set_matrix_row(meanValues, k, sig_read(saveTo,parametersNumber+k));
+	  set_matrix_row(stdValues, k, stdValuesArr);
+}
 
 initFrames = 10;
 foregroundThreshold = 2.5;
