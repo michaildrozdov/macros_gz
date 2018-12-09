@@ -124,7 +124,20 @@ stdevStep = 2*floor(N/skipSize/5/2);//when calculating variable threshold, it is
 //one calculation
 thresholdValuesLocal = signal(1, N/skipSize, false);//array, which will be used to store variable (with point in signal) threshold
 stddevLocalCalcArray = signal(1, stdevStep, false);//array to store region of power signal for quick mean and stdev calculation
+meanValues1 = prev1;
+meanValues2 = sig_read(saveTo,parametersNumber+1);
+stdValues1 = signal(T,N,false);
+stdValues1 = 1000;
+stdValues2 = stdValues1;
+mask1 = signal(T,N,false);
+mask2 = signal(T,N,false);
 
+initFrames = 10;
+foregroundThreshold = 2.5;
+backgroundThreshold = 1;
+learningRate = 0.05;
+useRGA = true;
+ 
 
 //if maximum angle is wide enough, drawing area width is calculated directly from that angle
 //otherwise additional width of maxDistance/3 is added to avoid drawing area as narrow strip
