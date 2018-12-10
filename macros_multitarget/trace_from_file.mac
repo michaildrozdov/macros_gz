@@ -1,4 +1,5 @@
 clear_variables();
+useRGA = true;
 //Initialization
 bestMaximum = 0;
 bestxx = 0;
@@ -139,8 +140,14 @@ for (k = 0; k < 8; k = k+1)
 initFrames = 10;
 foregroundThreshold = 2.5;
 backgroundThreshold = 1;
-learningRate = 0.05;
-useRGA = true;
+learningRate = 0.5;
+
+
+kernel = signal(1,7,false);
+kernel = sqrt(2);
+extendedKernel = prev1;
+extendedKernel = 0;
+insert(kernel, 0, 6,extendedKernel, 0);
  
 
 //if maximum angle is wide enough, drawing area width is calculated directly from that angle
@@ -346,9 +353,19 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    { 
 			      currentFrame = get_matrix_row(currentSignal, ka) - get_matrix_row(meanValues, ka);
 			      set_label(currentFrame,T,"nS","mV");
-			      currentFrame = lf(currentFrame, ffilt1,ffilt2,-6);
+			      currentFrame = ifft(fft(currentFrame)*fft(extendedKernel));
+			      r9 = currentFrame;
+			      //currentFrame = lf(currentFrame, ffilt1,ffilt2,-6);
 			      currentDeviations = sqrt(get_matrix_row(stdValues, ka));
 			      set_label(currentDeviations,T,"nS","mV");
+			      r14 = currentDeviations;
+			      temp = get_matrix_row(currentSignal, ka);
+			      set_label(temp, T, "ns", "mV");
+			      r15 = temp;
+			      temp = get_matrix_row(meanValues, ka);
+			      set_label(temp, T, "ns", "mV");
+			      r16 = temp;
+			      
 			      currentMask = currentDeviations;
 			      currentMask = 0;
 			      for (ia = 0; ia < N; ia = ia + 1)
@@ -365,12 +382,29 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 						  }
 					}
 			      }
-			      currentMask = lf(currentMask, ffilt1/2, filt2/2, -1);
-			      currentDeviations = learningRate*currentFrame*currentFrame + (1 - learningRate)*currentDeviations;
-			      currentDeviations = lf(currentDeviations, ffilt1,ffilt2,-6);
+
+			      currentMask = ifft(fft(currentMask)*fft(extendedKernel));
+			      currentDeviations = learningRate*currentFrame*currentFrame + (1 - learningRate)*currentDeviations*currentDeviations;
+			      r11 = sqrt(currentDeviations);
+			      currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));
 			      set_matrix_row(meanValues, ka, learningRate*(1-currentMask)*get_matrix_row(currentSignal, ka) + (1 -  learningRate*(1-currentMask))*get_matrix_row(meanValues, ka));
+			      //set_matrix_row(meanValues, ka, learningRate*get_matrix_row(currentSignal, ka) + (1 -  learningRate)*get_matrix_row(meanValues, ka));
+			      
+			      temp = get_matrix_row(meanValues, ka);
+			      set_label(temp, T, "ns", "mV");
+			      r12 = temp;
 			      set_matrix_row(meanSignal, ka, get_matrix_row(meanValues, ka));
 			      set_matrix_row(masks, ka, currentMask);
+			      r10 = currentMask;
+			      set_matrix_row(stdValues, ka, currentDeviations);
+			      r13 = sqrt(currentDeviations);
+			      //pause();
+		    }
+		    
+		    learningRate = learningRate*0.95;
+		    if (learningRate < 0.1)
+		    {
+			      learningRate = 0.1;
 		    }
 	  }
 	  else
@@ -414,6 +448,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    {
 			      cur = get_matrix_row(currentSignal,ka);
 			      mea = get_matrix_row(meanSignal,ka);
+			      
 			      set_label(cur,T,"nS","mV");
 			      set_label(mea,T,"nS","mV");
 
@@ -465,23 +500,66 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  pos = 0;
 	  if (showSignals)
 	  {
-			  r1 = get_matrix_row(currentSignal, 0) - get_matrix_row(prevSignal, 0);
-			  r2 = get_matrix_row(currentSignal, 1) - get_matrix_row(prevSignal, 1);
-			  r3 = get_matrix_row(currentSignal, 2) - get_matrix_row(prevSignal, 2);
-			  r4 = get_matrix_row(currentSignal, 3) - get_matrix_row(prevSignal, 3);
-			  r5 = get_matrix_row(currentSignal, 4) - get_matrix_row(prevSignal, 4);
-			  r6 = get_matrix_row(currentSignal, 5) - get_matrix_row(prevSignal, 5);
-			  r7 = get_matrix_row(currentSignal, 6) - get_matrix_row(prevSignal, 6);
-			  r8 = get_matrix_row(currentSignal, 7) - get_matrix_row(prevSignal, 7);
+			  //r1 = get_matrix_row(currentSignal, 0) - get_matrix_row(prevSignal, 0);
+			  //r2 = get_matrix_row(currentSignal, 1) - get_matrix_row(prevSignal, 1);
+			  //r3 = get_matrix_row(currentSignal, 2) - get_matrix_row(prevSignal, 2);
+			  //r4 = get_matrix_row(currentSignal, 3) - get_matrix_row(prevSignal, 3);
+			  //r5 = get_matrix_row(currentSignal, 4) - get_matrix_row(prevSignal, 4);
+			  //r6 = get_matrix_row(currentSignal, 5) - get_matrix_row(prevSignal, 5);
+			  //r7 = get_matrix_row(currentSignal, 6) - get_matrix_row(prevSignal, 6);
+			  //r8 = get_matrix_row(currentSignal, 7) - get_matrix_row(prevSignal, 7);
 			  
-			  r9 = get_matrix_row(powersignal, 0)/100;
-			  r10 = get_matrix_row(powersignal, 1)/100;
-			  r11 = get_matrix_row(powersignal, 2)/100;
-			  r12 = get_matrix_row(powersignal, 3)/100;
-			  r13 = get_matrix_row(powersignal, 4)/100;
-			  r14 = get_matrix_row(powersignal, 5)/100;
-			  r15 = get_matrix_row(powersignal, 6)/100;
-			  r16 = get_matrix_row(powersignal, 7)/100;
+			  temp = get_matrix_row(masks,0);
+			  set_label(temp,T,"nS","mV");
+			  r1 = temp;
+			  temp = get_matrix_row(masks,1);
+			  set_label(temp,T,"nS","mV");
+			  r2 = temp;
+			  temp = get_matrix_row(masks,2);
+			  set_label(temp,T,"nS","mV");
+			  r3 = temp;
+			  temp = get_matrix_row(masks,3);
+			  set_label(temp,T,"nS","mV");
+			  r4 = temp;
+			  temp = get_matrix_row(masks,4);
+			  set_label(temp,T,"nS","mV");
+			  r5 = temp;
+			  temp = get_matrix_row(masks,5);
+			  set_label(temp,T,"nS","mV");
+			  r6 = temp;
+			  temp = get_matrix_row(masks,6);
+			  set_label(temp,T,"nS","mV");
+			  r7 = temp;
+			  temp = get_matrix_row(masks,7);
+			  set_label(temp,T,"nS","mV");
+			  r8 = temp;
+			  
+			  temp = get_matrix_row(differenceSignal, 0);
+			  set_label(temp,T,"nS","mV");
+			  r1 = temp;
+			  
+			  temp = get_matrix_row(differenceSignal, 1);
+			  set_label(temp,T,"nS","mV");
+			  r2 = temp;
+			  temp = get_matrix_row(differenceSignal, 2);
+			  set_label(temp,T,"nS","mV");
+			  r3 = temp;
+			  temp = get_matrix_row(differenceSignal, 3);
+			  set_label(temp,T,"nS","mV");
+			  r4 = temp;
+			  temp = get_matrix_row(differenceSignal, 4);
+			  set_label(temp,T,"nS","mV");
+			  r5 = temp;
+			  temp = get_matrix_row(differenceSignal, 5);
+			  set_label(temp,T,"nS","mV");
+			  r6 = temp;
+			  temp = get_matrix_row(differenceSignal, 6);
+			  set_label(temp,T,"nS","mV");
+			  r7 = temp;
+			  temp = get_matrix_row(differenceSignal, 7);
+			  set_label(temp,T,"nS","mV");
+			  r8 = temp;
+			  set_matrix_row(meanSignal, ka, get_matrix_row(meanValues, ka));
 	  }
 
 
@@ -539,28 +617,28 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    //End of Threshold on power (if needed)
 		    tempSig = get_matrix_row(powerWithThreshold, 0)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r1 = tempSig;
+		    //r1 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 1)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r2 = tempSig;
+		    //r2 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 2)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r3 = tempSig;
+		    //r3 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 3)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r4 = tempSig;
+		    //r4 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 4)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r5 = tempSig;
+		    //r5 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 5)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r6 = tempSig;
+		    //r6 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 6)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r7 = tempSig;
+		    //r7 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 7)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r8 = tempSig;
+		    //r8 = tempSig;
 		    
 		    //Finding fronts and zero padding
 		    for (ka = 0; ka < 8; ka = ka + 1)
@@ -879,7 +957,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  time_mark2 = time()-before;
 	  out(time_mark2);
 	  
-	  //pause();
+	  pause();
 	  
 	  next:
 }
