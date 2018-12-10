@@ -3,7 +3,7 @@ clear_variables();
 bestMaximum = 0;
 bestxx = 0;
 bestyy = 0;
-showSignals = false;//update registers with current signals, if true
+showSignals = true;//update registers with current signals, if true
 stationaryBackground = false;//one signal is used as background
 calculateTargetSpace = true;//if false, only signals are acquired/loaded, but no other processing
 meanCoef = 0.0;//how much of accumulated background is used in next frame, 0 - means current - prev
@@ -128,6 +128,7 @@ meanValues = matrix(8,N);
 stdValuesArr = signal(T,N,false);
 stdValuesArr = 1000;
 stdValues = matrix(8,N);
+masks = matrix(8,N);
 
 for (k = 0; k < 8; k = k+1)
 {
@@ -336,25 +337,63 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    set_matrix_row(prevSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka));
 		    set_matrix_row(currentSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka + 8));
 	  }
-	  if (stationaryBackground)
+	  
+	  ffilt1 = 4;//GHz
+	  ffilt2 = 4.5;//GHz
+	  if (useRGA)
 	  {
 		    for (ka = 0; ka < 8; ka = ka + 1)
-		    {
-			      set_matrix_row(prevSignal, ka, w*sig_read(saveTo, parametersNumber + backAt*sigsInPeriod + ka));
+		    { 
+			      currentFrame = get_matrix_row(currentSignal, ka) - get_matrix_row(meanValues, ka);
+			      set_label(currentFrame,T,"nS","mV");
+			      currentFrame = lf(currentFrame, ffilt1,ffilt2,-6);
+			      currentDeviations = sqrt(get_matrix_row(stdValues, ka));
+			      set_label(currentDeviations,T,"nS","mV");
+			      currentMask = currentDeviations;
+			      currentMask = 0;
+			      for (ia = 0; ia < N; ia = ia + 1)
+			      {
+					if (abs(currentFrame[ia]) > foregroundThreshold*currentDeviations[ia])
+					{
+						  currentMask[ia] = 1;
+					}
+					else
+					{
+						  if (abs(currentFrame[ia]) > backgroundThreshold*currentDeviations[ia])
+						  {
+							    currentMask[ia] = (abs(currentFrame[ia]) - backgroundThreshold*currentDeviations[ia])/(foregroundThreshold - backgroundThreshold)/currentDeviations[ia];
+						  }
+					}
+			      }
+			      currentMask = lf(currentMask, ffilt1/2, filt2/2, -1);
+			      currentDeviations = learningRate*currentFrame*currentFrame + (1 - learningRate)*currentDeviations;
+			      currentDeviations = lf(currentDeviations, ffilt1,ffilt2,-6);
+			      set_matrix_row(meanValues, ka, learningRate*(1-currentMask)*get_matrix_row(currentSignal, ka) + (1 -  learningRate*(1-currentMask))*get_matrix_row(meanValues, ka));
+			      set_matrix_row(meanSignal, ka, get_matrix_row(meanValues, ka));
+			      set_matrix_row(masks, ka, currentMask);
 		    }
 	  }
-	  
-	  for (ka = 0; ka < 8; ka = ka + 1)
+	  else
 	  {
-		    set_matrix_row(meanSignal, ka, (1 - meanCoef)*get_matrix_row(prevSignal,ka) + meanCoef*get_matrix_row(meanSignal,ka));
+		    if (stationaryBackground)
+		    {
+			      for (ka = 0; ka < 8; ka = ka + 1)
+			      {
+					set_matrix_row(prevSignal, ka, w*sig_read(saveTo, parametersNumber + backAt*sigsInPeriod + ka));
+			      }
+		    }
+		    
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      set_matrix_row(meanSignal, ka, (1 - meanCoef)*get_matrix_row(prevSignal,ka) + meanCoef*get_matrix_row(meanSignal,ka));
+		    }
 	  }
 
 	  //End of Signal acquisition
 	  
 	  
 	  //Difference signal calculation
-	  ffilt1 = 4;//GHz
-	  ffilt2 = 4.5;//GHz
+	 
 	  for (point = 0; point < N - slidingWindowN; point = point + 1)
 	  {
 	    
@@ -371,12 +410,24 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  
 	  for (ka = 0; ka < 8; ka = ka + 1)
 	  {
-		    cur = get_matrix_row(currentSignal,ka);
-		    mea = get_matrix_row(meanSignal,ka);
-		    set_label(cur,T,"nS","mV");
-		    set_label(mea,T,"nS","mV");
-		    curPower = get_matrix_row(powerRaw,ka);
-		    set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6)/(push(curPower,slidingWindowN/2) + 0.5));
+		    if (useRGA)
+		    {
+			      cur = get_matrix_row(currentSignal,ka);
+			      mea = get_matrix_row(meanSignal,ka);
+			      set_label(cur,T,"nS","mV");
+			      set_label(mea,T,"nS","mV");
+
+			      set_matrix_row(differenceSignal, ka,(cur - mea)*get_matrix_row(masks, ka));
+		    }
+		    else
+		    {
+			      cur = get_matrix_row(currentSignal,ka);
+			      mea = get_matrix_row(meanSignal,ka);
+			      set_label(cur,T,"nS","mV");
+			      set_label(mea,T,"nS","mV");
+			      curPower = get_matrix_row(powerRaw,ka);
+			      set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6)/(push(curPower,slidingWindowN/2) + 0.5));
+		    }
 		    tempNormal = get_matrix_row(differenceSignal, ka);
 		    set_label(tempNormal,T,"nS","mV");
 
