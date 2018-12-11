@@ -1,3 +1,14 @@
+//macro for switch test
+//connect 1st output of switch to ch1
+//connect 2nd output of switch to ch2
+//connect 3rd output of switch to ch3
+//connect 4th output of switch to ch4
+//macro will first acquire reference signals for each switching channel, then run through all switch channels some number (defined by switches) times
+//and measure extremum value of difference between current signal and base signal
+//difference is filtered before measuring amplitudes
+//r1, r2, r3, r4 are used as outputs
+//if switches is set to value higher than 1, standard deviations of extremum amplitudes for each switch channel are shown in variables window
+//measurement signals stored to measuredSignals1, measuredSignals2, measuredSignals3, measuredSignals4
 clear_variables();
 
 maxFreq = 10;
@@ -8,401 +19,151 @@ pauseCyclems = 2000;//pause between cycles
 
 W=WINDOW(ch1);
 N=count(ch1);
-measuredSignals = matrix(4*switches,N);
+measuredExtremums1 = signal(1,switches,false);
+measuredExtremums2 = signal(1,switches,false);
+measuredExtremums3 = signal(1,switches,false);
+measuredExtremums4 = signal(1,switches,false);
+measuredExtremums1 = 0;
+measuredExtremums2 = 0;
+measuredExtremums3 = 0;
+measuredExtremums4 = 0;
+measuredSignals1 = matrix(switches, N);
+measuredSignals2 = matrix(switches, N);
+measuredSignals3 = matrix(switches, N);
+measuredSignals4 = matrix(switches, N);
+
 baseSignals = matrix(4,N);
 
 set_trans_mask(15);
 set_trans_mask(14);
 sleep(pausems);
 
-acquire(1, back1, 2, back2, 3, back3, 4, back4);
-
+acquire(1, back1);
 set_matrix_row(baseSignals,0,back1);
-set_matrix_row(baseSignals,1,back2);
-set_matrix_row(baseSignals,2,back3);
-set_matrix_row(baseSignals,3,back4);
 	
 set_trans_mask(15);
 set_trans_mask(13);
 sleep(pausems);
 
-acquire(1,back1, 2, back2, 3, back3, 4, back4);
+acquire(2, back2);
+set_matrix_row(baseSignals,1,back2);
 
-	set_matrix_row(mt,16,back1);
-	set_matrix_row(mt,17,push(back1,-shift));
-	set_matrix_row(mt,18,back2);
-	set_matrix_row(mt,19,push(back2,-shift));
-	set_matrix_row(mt,20,back3);
-	set_matrix_row(mt,21,push(back3,-shift));
-	set_matrix_row(mt,22,back4);
-	set_matrix_row(mt,23,push(back4,-shift));
-	set_matrix_row(mt,24,back5);
-	set_matrix_row(mt,25,push(back5,-shift));
-	set_matrix_row(mt,26,back6);
-	set_matrix_row(mt,27,push(back6,-shift));
-	set_matrix_row(mt,28,back7);
-	set_matrix_row(mt,29,push(back7,-shift));
-	set_matrix_row(mt,30,back8);
-	set_matrix_row(mt,31,push(back8,-shift));
+set_trans_mask(15);
+set_trans_mask(11);
+sleep(pausems);
 
-	set_trans_mask(15);
-	set_trans_mask(11);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+acquire(3, back3);
+set_matrix_row(baseSignals,2,back3);
 
-	set_matrix_row(mt,32,back1);
-	set_matrix_row(mt,33,push(back1,-shift));
-	set_matrix_row(mt,34,back2);
-	set_matrix_row(mt,35,push(back2,-shift));
-	set_matrix_row(mt,36,back3);
-	set_matrix_row(mt,37,push(back3,-shift));
-	set_matrix_row(mt,38,back4);
-	set_matrix_row(mt,39,push(back4,-shift));
-	set_matrix_row(mt,40,back5);
-	set_matrix_row(mt,41,push(back5,-shift));
-	set_matrix_row(mt,42,back6);
-	set_matrix_row(mt,43,push(back6,-shift));
-	set_matrix_row(mt,44,back7);
-	set_matrix_row(mt,45,push(back7,-shift));
-	set_matrix_row(mt,46,back8);
-	set_matrix_row(mt,47,push(back8,-shift));
+set_trans_mask(15);
+set_trans_mask(7);
+sleep(pausems);
 
-	set_trans_mask(15);
-	set_trans_mask(7);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+acquire(4,back4);
+set_matrix_row(baseSignals,3,back4);
 
-
-	set_matrix_row(mt,48,back1);
-	set_matrix_row(mt,49,push(back1,-shift));
-	set_matrix_row(mt,50,back2);
-	set_matrix_row(mt,51,push(back2,-shift));
-	set_matrix_row(mt,52,back3);
-	set_matrix_row(mt,53,push(back3,-shift));
-	set_matrix_row(mt,54,back4);
-	set_matrix_row(mt,55,push(back4,-shift));
-	set_matrix_row(mt,56,back5);
-	set_matrix_row(mt,57,push(back5,-shift));
-	set_matrix_row(mt,58,back6);
-	set_matrix_row(mt,59,push(back6,-shift));
-	set_matrix_row(mt,60,back7);
-	set_matrix_row(mt,61,push(back7,-shift));
-	set_matrix_row(mt,62,back8);
-	set_matrix_row(mt,63,push(back8,-shift));
-
-	set_trans_mask(15);
-	set_trans_mask(14);
-
-	sleep(pauseCyclems);
+set_trans_mask(15);
+set_trans_mask(14);
+sleep(pauseCyclems);
 
 for (ia = 0; ia < switches; ia = ia +1)
 {
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+	  acquire(1, back1);
+	  tempSig = get_matrix_row(baseSignals, 0);
+	  set_label(tempSig,T,"ns","mV");
+	  differSignal = lf(back1- tempSig, maxFreq, 1.5*maxFreq, -6);
+	  pos = 0;
+	  maxVal = max(differSignal, pos);
+	  minVal = -min(differSignal, pos);
+	  if (maxVal > minVal)
+	  {
+		    measuredExtremums1[ia] = maxVal;
+	  }
+	  else
+	  {
+		    measuredExtremums1[ia] = minVal;
+	  }
+	  set_matrix_row(measuredSignals1, ia, back1);
+		  
+	  set_trans_mask(15);
+	  set_trans_mask(13);
+	  sleep(pausems);
 
-	set_matrix_row(mt,0, back1 - get_matrix_row(mt, 0));
-	set_matrix_row(mt,1, push(back1,-shift) - get_matrix_row(mt, 1));
-	set_matrix_row(mt,2, back2 - get_matrix_row(mt, 2));
-	set_matrix_row(mt,3, push(back2,-shift) - get_matrix_row(mt, 3));
-	set_matrix_row(mt,4, back3 - get_matrix_row(mt, 4));
-	set_matrix_row(mt,5, push(back3,-shift) - get_matrix_row(mt, 5));
-	set_matrix_row(mt,6, back4 - get_matrix_row(mt, 6));
-	set_matrix_row(mt,7, push(back4,-shift) - get_matrix_row(mt, 7));
-	set_matrix_row(mt,8, back5 - get_matrix_row(mt, 8));
-	set_matrix_row(mt,9, push(back5,-shift) - get_matrix_row(mt, 9));
-	set_matrix_row(mt,10, back6 - get_matrix_row(mt, 10));
-	set_matrix_row(mt,11, push(back6,-shift) - get_matrix_row(mt, 11));
-	set_matrix_row(mt,12, back7 - get_matrix_row(mt, 12));
-	set_matrix_row(mt,13, push(back7,-shift) - get_matrix_row(mt, 13));
-	set_matrix_row(mt,14, back8 - get_matrix_row(mt, 14));
-	set_matrix_row(mt,15, push(back8,-shift) - get_matrix_row(mt, 15));
+	  acquire(2, back2);
+	  tempSig = get_matrix_row(baseSignals, 1);
+	  set_label(tempSig,T,"ns","mV");
+	  differSignal = lf(back2- tempSig, maxFreq, 1.5*maxFreq, -6);
+	  pos = 0;
+	  maxVal = max(differSignal, pos);
+	  minVal = -min(differSignal, pos);
+	  if (maxVal > minVal)
+	  {
+		    measuredExtremums2[ia] = maxVal;
+	  }
+	  else
+	  {
+		    measuredExtremums2[ia] = minVal;
+	  }
+	  set_matrix_row(measuredSignals1, ia, back1);
 
-	set_trans_mask(15);
-	set_trans_mask(13);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+	  set_trans_mask(15);
+	  set_trans_mask(11);
+	  sleep(pausems);
 
-	set_matrix_row(mt,16, back1 - get_matrix_row(mt, 16));
-	set_matrix_row(mt,17, push(back1,-shift) - get_matrix_row(mt, 17));
-	set_matrix_row(mt,18, back2 - get_matrix_row(mt, 18));
-	set_matrix_row(mt,19, push(back2,-shift) - get_matrix_row(mt, 19));
-	set_matrix_row(mt,20, back3 - get_matrix_row(mt, 20));
-	set_matrix_row(mt,21, push(back3,-shift) - get_matrix_row(mt, 21));
-	set_matrix_row(mt,22, back4 - get_matrix_row(mt, 22));
-	set_matrix_row(mt,23, push(back4,-shift) - get_matrix_row(mt, 23));
-	set_matrix_row(mt,24, back5 - get_matrix_row(mt, 24));
-	set_matrix_row(mt,25, push(back5,-shift) - get_matrix_row(mt, 25));
-	set_matrix_row(mt,26, back6 - get_matrix_row(mt, 26));
-	set_matrix_row(mt,27, push(back6,-shift) - get_matrix_row(mt, 27));
-	set_matrix_row(mt,28, back7 - get_matrix_row(mt, 28));
-	set_matrix_row(mt,29, push(back7,-shift) - get_matrix_row(mt, 29));
-	set_matrix_row(mt,30, back8 - get_matrix_row(mt, 30));
-	set_matrix_row(mt,31, push(back8,-shift) - get_matrix_row(mt, 31));
+	  acquire(3, back3);
+	  tempSig = get_matrix_row(baseSignals, 2);
+	  set_label(tempSig,T,"ns","mV");
+	  differSignal = lf(back3- tempSig, maxFreq, 1.5*maxFreq, -6);
+	  pos = 0;
+	  maxVal = max(differSignal, pos);
+	  minVal = -min(differSignal, pos);
+	  if (maxVal > minVal)
+	  {
+		    measuredExtremums3[ia] = maxVal;
+	  }
+	  else
+	  {
+		    measuredExtremums3[ia] = minVal;
+	  }
+	  set_matrix_row(measuredSignals1, ia, back1);
 
+	  set_trans_mask(15);
+	  set_trans_mask(7);
+	  sleep(pausems);
 
-	set_trans_mask(15);
-	set_trans_mask(11);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+	  acquire(4,back4);
+	  tempSig = get_matrix_row(baseSignals, 3);
+	  set_label(tempSig,T,"ns","mV");
+	  differSignal = lf(back4- tempSig, maxFreq, 1.5*maxFreq, -6);
+	  pos = 0;
+	  maxVal = max(differSignal, pos);
+	  minVal = -min(differSignal, pos);
+	  if (maxVal > minVal)
+	  {
+		    measuredExtremums4[ia] = maxVal;
+	  }
+	  else
+	  {
+		    measuredExtremums4[ia] = minVal;
+	  }
+	  set_matrix_row(measuredSignals1, ia, back1);
 
-	r13 = back1;
-	r14 = get_matrix_row(mt, 32);
-	set_matrix_row(mt,32, back1 - get_matrix_row(mt, 32));
-	set_matrix_row(mt,33, push(back1,-shift) - get_matrix_row(mt, 33));
-	set_matrix_row(mt,34, back2 - get_matrix_row(mt, 34));
-	set_matrix_row(mt,35, push(back2,-shift) - get_matrix_row(mt, 35));
-	set_matrix_row(mt,36, back3 - get_matrix_row(mt, 36));
-	set_matrix_row(mt,37, push(back3,-shift) - get_matrix_row(mt, 37));
-	set_matrix_row(mt,38, back4 - get_matrix_row(mt, 38));
-	set_matrix_row(mt,39, push(back4,-shift) - get_matrix_row(mt, 39));
-	set_matrix_row(mt,40, back5 - get_matrix_row(mt, 40));
-	set_matrix_row(mt,41, push(back5,-shift) - get_matrix_row(mt, 41));
-	set_matrix_row(mt,42, back6 - get_matrix_row(mt, 42));
-	set_matrix_row(mt,43, push(back6,-shift) - get_matrix_row(mt, 43));
-	set_matrix_row(mt,44, back7 - get_matrix_row(mt, 44));
-	set_matrix_row(mt,45, push(back7,-shift) - get_matrix_row(mt, 45));
-	set_matrix_row(mt,46, back8 - get_matrix_row(mt, 46));
-	set_matrix_row(mt,47, push(back8,-shift) - get_matrix_row(mt, 47));
-
-	set_trans_mask(15);
-	set_trans_mask(7);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	r11 = back1;
-	r12 = get_matrix_row(mt, 48);
-	set_matrix_row(mt,48, back1 - get_matrix_row(mt, 48));
-	
-	set_matrix_row(mt,49, push(back1,-shift) - get_matrix_row(mt, 49));
-	set_matrix_row(mt,50, back2 - get_matrix_row(mt, 50));
-	set_matrix_row(mt,51, push(back2,-shift) - get_matrix_row(mt, 51));
-	set_matrix_row(mt,52, back3 - get_matrix_row(mt, 52));
-	set_matrix_row(mt,53, push(back3,-shift) - get_matrix_row(mt, 53));
-	set_matrix_row(mt,54, back4 - get_matrix_row(mt, 54));
-	set_matrix_row(mt,55, push(back4,-shift) - get_matrix_row(mt, 55));
-	set_matrix_row(mt,56, back5 - get_matrix_row(mt, 56));
-	set_matrix_row(mt,57, push(back5,-shift) - get_matrix_row(mt, 57));
-	set_matrix_row(mt,58, back6 - get_matrix_row(mt, 58));
-	set_matrix_row(mt,59, push(back6,-shift) - get_matrix_row(mt, 59));
-	set_matrix_row(mt,60, back7 - get_matrix_row(mt, 60));
-	set_matrix_row(mt,61, push(back7,-shift) - get_matrix_row(mt, 61));
-	set_matrix_row(mt,62, back8 - get_matrix_row(mt, 62));
-	set_matrix_row(mt,63, push(back8,-shift) - get_matrix_row(mt, 63));
-	
-	
-	
-	
-	set_trans_mask(15);
-	set_trans_mask(14);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-
-	set_matrix_row(mt,0,back1);
-	set_matrix_row(mt,1,push(back1,-shift));
-	set_matrix_row(mt,2,back2);
-	set_matrix_row(mt,3,push(back2,-shift));
-	set_matrix_row(mt,4,back3);
-	set_matrix_row(mt,5,push(back3,-shift));
-	set_matrix_row(mt,6,back4);
-	set_matrix_row(mt,7,push(back4,-shift));
-	set_matrix_row(mt,8,back5);
-	set_matrix_row(mt,9,push(back5,-shift));
-	set_matrix_row(mt,10,back6);
-	set_matrix_row(mt,11,push(back6,-shift));
-	set_matrix_row(mt,12,back7);
-	set_matrix_row(mt,13,push(back7,-shift));
-	set_matrix_row(mt,14,back8);
-	set_matrix_row(mt,15,push(back8,-shift));
-	
-	set_trans_mask(15);
-	set_trans_mask(13);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	set_matrix_row(mt,16,back1);
-	set_matrix_row(mt,17,push(back1,-shift));
-	set_matrix_row(mt,18,back2);
-	set_matrix_row(mt,19,push(back2,-shift));
-	set_matrix_row(mt,20,back3);
-	set_matrix_row(mt,21,push(back3,-shift));
-	set_matrix_row(mt,22,back4);
-	set_matrix_row(mt,23,push(back4,-shift));
-	set_matrix_row(mt,24,back5);
-	set_matrix_row(mt,25,push(back5,-shift));
-	set_matrix_row(mt,26,back6);
-	set_matrix_row(mt,27,push(back6,-shift));
-	set_matrix_row(mt,28,back7);
-	set_matrix_row(mt,29,push(back7,-shift));
-	set_matrix_row(mt,30,back8);
-	set_matrix_row(mt,31,push(back8,-shift));
-
-	set_trans_mask(15);
-	set_trans_mask(11);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	set_matrix_row(mt,32,back1);
-	set_matrix_row(mt,33,push(back1,-shift));
-	set_matrix_row(mt,34,back2);
-	set_matrix_row(mt,35,push(back2,-shift));
-	set_matrix_row(mt,36,back3);
-	set_matrix_row(mt,37,push(back3,-shift));
-	set_matrix_row(mt,38,back4);
-	set_matrix_row(mt,39,push(back4,-shift));
-	set_matrix_row(mt,40,back5);
-	set_matrix_row(mt,41,push(back5,-shift));
-	set_matrix_row(mt,42,back6);
-	set_matrix_row(mt,43,push(back6,-shift));
-	set_matrix_row(mt,44,back7);
-	set_matrix_row(mt,45,push(back7,-shift));
-	set_matrix_row(mt,46,back8);
-	set_matrix_row(mt,47,push(back8,-shift));
-
-	set_trans_mask(15);
-	set_trans_mask(7);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-
-	set_matrix_row(mt,48,back1);
-	set_matrix_row(mt,49,push(back1,-shift));
-	set_matrix_row(mt,50,back2);
-	set_matrix_row(mt,51,push(back2,-shift));
-	set_matrix_row(mt,52,back3);
-	set_matrix_row(mt,53,push(back3,-shift));
-	set_matrix_row(mt,54,back4);
-	set_matrix_row(mt,55,push(back4,-shift));
-	set_matrix_row(mt,56,back5);
-	set_matrix_row(mt,57,push(back5,-shift));
-	set_matrix_row(mt,58,back6);
-	set_matrix_row(mt,59,push(back6,-shift));
-	set_matrix_row(mt,60,back7);
-	set_matrix_row(mt,61,push(back7,-shift));
-	set_matrix_row(mt,62,back8);
-	set_matrix_row(mt,63,push(back8,-shift));
-
-	set_trans_mask(15);
-	set_trans_mask(14);
-
-	sleep(3000);
-
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	set_matrix_row(mt,0, back1 - get_matrix_row(mt, 0));
-	set_matrix_row(mt,1, push(back1,-shift) - get_matrix_row(mt, 1));
-	set_matrix_row(mt,2, back2 - get_matrix_row(mt, 2));
-	set_matrix_row(mt,3, push(back2,-shift) - get_matrix_row(mt, 3));
-	set_matrix_row(mt,4, back3 - get_matrix_row(mt, 4));
-	set_matrix_row(mt,5, push(back3,-shift) - get_matrix_row(mt, 5));
-	set_matrix_row(mt,6, back4 - get_matrix_row(mt, 6));
-	set_matrix_row(mt,7, push(back4,-shift) - get_matrix_row(mt, 7));
-	set_matrix_row(mt,8, back5 - get_matrix_row(mt, 8));
-	set_matrix_row(mt,9, push(back5,-shift) - get_matrix_row(mt, 9));
-	set_matrix_row(mt,10, back6 - get_matrix_row(mt, 10));
-	set_matrix_row(mt,11, push(back6,-shift) - get_matrix_row(mt, 11));
-	set_matrix_row(mt,12, back7 - get_matrix_row(mt, 12));
-	set_matrix_row(mt,13, push(back7,-shift) - get_matrix_row(mt, 13));
-	set_matrix_row(mt,14, back8 - get_matrix_row(mt, 14));
-	set_matrix_row(mt,15, push(back8,-shift) - get_matrix_row(mt, 15));
-
-	set_trans_mask(15);
-	set_trans_mask(13);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	set_matrix_row(mt,16, back1 - get_matrix_row(mt, 16));
-	set_matrix_row(mt,17, push(back1,-shift) - get_matrix_row(mt, 17));
-	set_matrix_row(mt,18, back2 - get_matrix_row(mt, 18));
-	set_matrix_row(mt,19, push(back2,-shift) - get_matrix_row(mt, 19));
-	set_matrix_row(mt,20, back3 - get_matrix_row(mt, 20));
-	set_matrix_row(mt,21, push(back3,-shift) - get_matrix_row(mt, 21));
-	set_matrix_row(mt,22, back4 - get_matrix_row(mt, 22));
-	set_matrix_row(mt,23, push(back4,-shift) - get_matrix_row(mt, 23));
-	set_matrix_row(mt,24, back5 - get_matrix_row(mt, 24));
-	set_matrix_row(mt,25, push(back5,-shift) - get_matrix_row(mt, 25));
-	set_matrix_row(mt,26, back6 - get_matrix_row(mt, 26));
-	set_matrix_row(mt,27, push(back6,-shift) - get_matrix_row(mt, 27));
-	set_matrix_row(mt,28, back7 - get_matrix_row(mt, 28));
-	set_matrix_row(mt,29, push(back7,-shift) - get_matrix_row(mt, 29));
-	set_matrix_row(mt,30, back8 - get_matrix_row(mt, 30));
-	set_matrix_row(mt,31, push(back8,-shift) - get_matrix_row(mt, 31));
-
-
-	set_trans_mask(15);
-	set_trans_mask(11);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	r13 = back1;
-	r14 = get_matrix_row(mt, 32);
-	set_matrix_row(mt,32, back1 - get_matrix_row(mt, 32));
-	set_matrix_row(mt,33, push(back1,-shift) - get_matrix_row(mt, 33));
-	set_matrix_row(mt,34, back2 - get_matrix_row(mt, 34));
-	set_matrix_row(mt,35, push(back2,-shift) - get_matrix_row(mt, 35));
-	set_matrix_row(mt,36, back3 - get_matrix_row(mt, 36));
-	set_matrix_row(mt,37, push(back3,-shift) - get_matrix_row(mt, 37));
-	set_matrix_row(mt,38, back4 - get_matrix_row(mt, 38));
-	set_matrix_row(mt,39, push(back4,-shift) - get_matrix_row(mt, 39));
-	set_matrix_row(mt,40, back5 - get_matrix_row(mt, 40));
-	set_matrix_row(mt,41, push(back5,-shift) - get_matrix_row(mt, 41));
-	set_matrix_row(mt,42, back6 - get_matrix_row(mt, 42));
-	set_matrix_row(mt,43, push(back6,-shift) - get_matrix_row(mt, 43));
-	set_matrix_row(mt,44, back7 - get_matrix_row(mt, 44));
-	set_matrix_row(mt,45, push(back7,-shift) - get_matrix_row(mt, 45));
-	set_matrix_row(mt,46, back8 - get_matrix_row(mt, 46));
-	set_matrix_row(mt,47, push(back8,-shift) - get_matrix_row(mt, 47));
-
-	set_trans_mask(15);
-	set_trans_mask(7);
-	sleep(pausems);
-	//acquire(255,255);
-	acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-	r11 = back1;
-	r12 = get_matrix_row(mt, 48);
-	set_matrix_row(mt,48, back1 - get_matrix_row(mt, 48));
-	
-	set_matrix_row(mt,49, push(back1,-shift) - get_matrix_row(mt, 49));
-	set_matrix_row(mt,50, back2 - get_matrix_row(mt, 50));
-	set_matrix_row(mt,51, push(back2,-shift) - get_matrix_row(mt, 51));
-	set_matrix_row(mt,52, back3 - get_matrix_row(mt, 52));
-	set_matrix_row(mt,53, push(back3,-shift) - get_matrix_row(mt, 53));
-	set_matrix_row(mt,54, back4 - get_matrix_row(mt, 54));
-	set_matrix_row(mt,55, push(back4,-shift) - get_matrix_row(mt, 55));
-	set_matrix_row(mt,56, back5 - get_matrix_row(mt, 56));
-	set_matrix_row(mt,57, push(back5,-shift) - get_matrix_row(mt, 57));
-	set_matrix_row(mt,58, back6 - get_matrix_row(mt, 58));
-	set_matrix_row(mt,59, push(back6,-shift) - get_matrix_row(mt, 59));
-	set_matrix_row(mt,60, back7 - get_matrix_row(mt, 60));
-	set_matrix_row(mt,61, push(back7,-shift) - get_matrix_row(mt, 61));
-	set_matrix_row(mt,62, back8 - get_matrix_row(mt, 62));
-	set_matrix_row(mt,63, push(back8,-shift) - get_matrix_row(mt, 63));	
+	  set_trans_mask(15);
+	  set_trans_mask(14);
+	  
+	  sleep(pauseCyclems);
 }
 	
-	
-	
-	
+r1 = measuredExtremums1;
+r2 = measuredExtremums2;
+r3 = measuredExtremums3;
+r4 = measuredExtremums4;
 
-
-
-
-r1 = lf(get_matrix_row(signals,48),maxFreq,maxFreq*1.5,-6);
-r2 = lf(get_matrix_row(signals,49),maxFreq,maxFreq*1.5,-6);
-r3 = lf(get_matrix_row(signals,50),maxFreq,maxFreq*1.5,-6);
-r4 = lf(get_matrix_row(signals,51),maxFreq,maxFreq*1.5,-6);
-r5 = lf(get_matrix_row(signals,52),maxFreq,maxFreq*1.5,-6);
-r6 = lf(get_matrix_row(signals,53),maxFreq,maxFreq*1.5,-6);
-r7 = lf(get_matrix_row(signals,54),maxFreq,maxFreq*1.5,-6);
-r8 = lf(get_matrix_row(signals,55),maxFreq,maxFreq*1.5,-6);
+if (switches > 1)
+{
+	  rms_of_extremums_switch1 = stdev(r1);
+	  rms_of_extremums_switch2 = stdev(r2);
+	  rms_of_extremums_switch3 = stdev(r3);
+	  rms_of_extremums_switch4 = stdev(r4);
+	  out(rms_of_extremums_switch4, rms_of_extremums_switch3, rms_of_extremums_switch2, rms_of_extremums_switch1);
+}
