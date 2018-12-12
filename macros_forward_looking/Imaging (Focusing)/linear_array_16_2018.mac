@@ -14,9 +14,11 @@ corrected_delays = true;
 trans = 3;
 
 
-
-path = "C:/Users/User1/Documents/signals.sig";
-background_path = "C:/Users/User1/Documents/linear_background.sig";
+path = "C:/Users/User1/Documents/";
+signalsFilename = path + "signals.sig";
+delaysFilename = path + "delays.sig";
+delaysTransFilename = path + "delays_trans.sig";
+backgroundFilename = path + "linear_background.sig";
 num_of_steps = 16;
 transx=Signal(1,4,False);
 transy=Signal(1,4,False);
@@ -74,13 +76,13 @@ if (get_signals)
 {
 	if (measure_object)
 	{
-		sig_add(path,r1);
-		sig_delete_all(path);
+		sig_add(signalsFilename,r1);
+		sig_delete_all(signalsFilename);
 	}
 	if (measure_background)
 	{
-		sig_add(background_path,r1);
-		sig_delete_all(background_path);
+		sig_add(backgroundFilename,r1);
+		sig_delete_all(backgroundFilename);
 	}
 
 	W=WINDOW(ch1);
@@ -190,7 +192,7 @@ if (get_signals)
 
 		  for (ia = 0; ia < 64; ia = ia + 1)
 		  {
-			  sig_add(background_path,get_matrix_row(mt, ia));
+			  sig_add(backgroundFilename,get_matrix_row(mt, ia));
 		  }
 
 		  set_trans_mask(15);
@@ -304,19 +306,19 @@ if (get_signals)
 
 		for (ia = 0; ia < 64; ia = ia + 1)
 		{
-			sig_add(path,get_matrix_row(mt, ia));
+			sig_add(signalsFilename,get_matrix_row(mt, ia));
 		}
 	}
 
 	for (ia = 0; ia < 64; ia = ia + 1)
 	{
-		set_matrix_row(mt,ia, SIG_READ(path,ia) - SIG_READ(background_path,ia));
+		set_matrix_row(mt,ia, SIG_READ(signalsFilename,ia) - SIG_READ(backgroundFilename,ia));
 	}
 
 }
 else
 {
-	r1=SIG_READ(path,0);
+	r1=SIG_READ(signalsFilename,0);
 	W=WINDOW(r1);
 	N=count(r1);
 	mt = matrix(num_of_steps*4,N);
@@ -330,10 +332,10 @@ c = 300.0;
 dN = N/W; 
 dNc = dN/c; 
 nd = signal(1,4,false);
-nd[0] = -autocorrelation_delay(sig_read(path,0), sig_read(background_path,0));
-nd[1] = -autocorrelation_delay(sig_read(path,16), sig_read(background_path,16));
-nd[2] = -autocorrelation_delay(sig_read(path,47), sig_read(background_path,47));
-nd[3] = -autocorrelation_delay(sig_read(path,63), sig_read(background_path,63));
+nd[0] = -autocorrelation_delay(sig_read(signalsFilename,0), sig_read(backgroundFilename,0));
+nd[1] = -autocorrelation_delay(sig_read(signalsFilename,16), sig_read(backgroundFilename,16));
+nd[2] = -autocorrelation_delay(sig_read(signalsFilename,47), sig_read(backgroundFilename,47));
+nd[3] = -autocorrelation_delay(sig_read(signalsFilename,63), sig_read(backgroundFilename,63));
 nd1 = nd[0];
 nd2 = nd[1];
 nd3 = nd[2];
@@ -344,16 +346,16 @@ tempSignal = signal(W/2, N/2, false);
 if (corrected_delays)
 {
 	delays = signal(1,16,false);
-	delays = SIG_READ("C:/Users/User1/Documents/delays.sig",0);
+	delays = SIG_READ(delaysFilename,0);
 	r11 = delays;
 	delays2 = signal(1,16,false);
-	delays2 = SIG_READ("C:/Users/User1/Documents/delays_trans.sig",0);
+	delays2 = SIG_READ(delaysTransFilename,0);
 	r12 = delays2;
 	for (ka = 0; ka < 4; ka = ka + 1)
 	{
 		for (ia = 0; ia<num_of_steps; ia=ia+1)
 		{	
-			tempRead = push(SIG_READ(path,ia + ka*16), nd[ka]) - SIG_READ(background_path,ia + ka*16);
+			tempRead = push(SIG_READ(signalsFilename,ia + ka*16), nd[ka]) - SIG_READ(backgroundFilename,ia + ka*16);
 			//tempRead = push(SIG_READ(path,ia + ka*16), nd[ka]);
 			insert(tempRead, 0, N/2-1, tempSignal, 0);
 			tempsp = fft(tempSignal);
@@ -371,14 +373,14 @@ else
 {
 	for (ia = 0; ia<4*num_of_steps; ia=ia+1)
 	{	
-		    tempRead = push(SIG_READ(path,ia), nd[0]) - SIG_READ(background_path,ia);
+		    tempRead = push(SIG_READ(signalsFilename,ia), nd[0]) - SIG_READ(backgroundFilename,ia);
 		    insert(tempRead, 0, N/2-1, tempSignal, 0);
 		    tempsp = fft(tempSignal);
-			tempsp[0] = 0;
-			tempsp[1] = 0;
-			tempsp[2] = 0;
-			tempsp[3] = 0;
-			tempSignal = ifft(tempsp);
+		    tempsp[0] = 0;
+		    tempsp[1] = 0;
+		    tempsp[2] = 0;
+		    tempsp[3] = 0;
+		    tempSignal = ifft(tempsp);
 		    set_matrix_row(signals,ia, 2*lf(tempSignal,maxFreq,maxFreq*1.5,-6));
 	}
 }
@@ -451,7 +453,7 @@ if (bla > 4)
 r13 = rsign;
 
 
-
+//threshold
 for(k=0; k<MaxY;k=k+1)
 {
 	for(i=0; i<MaxX;i=i+1)

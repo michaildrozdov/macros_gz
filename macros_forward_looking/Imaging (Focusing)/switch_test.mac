@@ -17,7 +17,7 @@ pausems = 150;//pause between each switch inside once cycle
 pauseCyclems = 2000;//pause between cycles
 
 
-W=WINDOW(ch1);
+T=WINDOW(ch1);
 N=count(ch1);
 measuredExtremums1 = signal(1,switches,false);
 measuredExtremums2 = signal(1,switches,false);
@@ -71,6 +71,9 @@ for (ia = 0; ia < switches; ia = ia +1)
 	  acquire(1, back1);
 	  tempSig = get_matrix_row(baseSignals, 0);
 	  set_label(tempSig,T,"ns","mV");
+	  (dt)=difference2(tempSig,back1);
+	  dt = -dt;
+	  tempSig = push2(tempSig,dt);
 	  differSignal = lf(back1- tempSig, maxFreq, 1.5*maxFreq, -6);
 	  pos = 0;
 	  maxVal = max(differSignal, pos);
@@ -92,6 +95,9 @@ for (ia = 0; ia < switches; ia = ia +1)
 	  acquire(2, back2);
 	  tempSig = get_matrix_row(baseSignals, 1);
 	  set_label(tempSig,T,"ns","mV");
+	  (dt)=difference2(tempSig,back2);
+	  dt = -dt;
+	  tempSig = push2(tempSig,dt);
 	  differSignal = lf(back2- tempSig, maxFreq, 1.5*maxFreq, -6);
 	  pos = 0;
 	  maxVal = max(differSignal, pos);
@@ -113,6 +119,9 @@ for (ia = 0; ia < switches; ia = ia +1)
 	  acquire(3, back3);
 	  tempSig = get_matrix_row(baseSignals, 2);
 	  set_label(tempSig,T,"ns","mV");
+	  (dt)=difference2(tempSig,back3);
+	  dt = -dt;
+	  tempSig = push2(tempSig,dt);
 	  differSignal = lf(back3- tempSig, maxFreq, 1.5*maxFreq, -6);
 	  pos = 0;
 	  maxVal = max(differSignal, pos);
@@ -134,6 +143,9 @@ for (ia = 0; ia < switches; ia = ia +1)
 	  acquire(4,back4);
 	  tempSig = get_matrix_row(baseSignals, 3);
 	  set_label(tempSig,T,"ns","mV");
+	  (dt)=difference2(tempSig,back4);
+	  dt = -dt;
+	  tempSig = push2(tempSig,dt);
 	  differSignal = lf(back4- tempSig, maxFreq, 1.5*maxFreq, -6);
 	  pos = 0;
 	  maxVal = max(differSignal, pos);
@@ -165,5 +177,11 @@ if (switches > 1)
 	  rms_of_extremums_switch2 = stdev(r2);
 	  rms_of_extremums_switch3 = stdev(r3);
 	  rms_of_extremums_switch4 = stdev(r4);
+	  
+	  mean_of_extremums_switch1 = mean(r1);
+	  mean_of_extremums_switch2 = mean(r2);
+	  mean_of_extremums_switch3 = mean(r3);
+	  mean_of_extremums_switch4 = mean(r4);
 	  out(rms_of_extremums_switch4, rms_of_extremums_switch3, rms_of_extremums_switch2, rms_of_extremums_switch1);
+	  out(mean_of_extremums_switch4, mean_of_extremums_switch3, mean_of_extremums_switch2, mean_of_extremums_switch1);
 }
