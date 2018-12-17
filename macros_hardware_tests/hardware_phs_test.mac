@@ -1,187 +1,108 @@
-//macro for switch test
-//connect 1st output of switch to ch1
-//connect 2nd output of switch to ch2
-//connect 3rd output of switch to ch3
-//connect 4th output of switch to ch4
-//macro will first acquire reference signals for each switching channel, then run through all switch channels some number (defined by switches) times
-//and measure extremum value of difference between current signal and base signal
-//difference is filtered before measuring amplitudes
-//r1, r2, r3, r4 are used as outputs
-//if switches is set to value higher than 1, standard deviations of extremum amplitudes for each switch channel are shown in variables window
-//measurement signals stored to measuredSignals1, measuredSignals2, measuredSignals3, measuredSignals4
+//macro for testing hardware and software phase stabilization
+//outputs:
+//r1 - delays left after software correction
+//r2 - delays left after hardware correction
+//r3 - maximum difference after software correction
+//r4 - maximum difference after hardware correction
+//observe Variables window for average duration per software and hardware corrction cycle
+//difference2.mac should be included in same directory as this macro
+//run measurement without hardware phase stabilization first
+//after pause turn hardware phase stabilization and press Continue
 clear_variables();
 
-maxFreq = 10;
-switches = 1;//number of switches to be made
-pausems = 150;//pause between each switch inside once cycle
-pauseCyclems = 2000;//pause between cycles
+pauseDuration = 1000;//ms, should be longer than it takes to acquire one signal
+measurements = 50;// total duration will be 2*pauseDuration*measurements/1000 s
+maxFreq = 6;//should be set to low value to simulate filtering of reference channel, should be same as for hardware filter
+
+delaysAfterHardwareCorrection = signal(1, measurements, false);
+delaysAfterSoftwareCorrection = signal(1, measurements, false);
+measuredHardwareExtremums = signal(1, measurements,false);
+measuredSoftwareExtremums = signal(1, measurements,false);
+hardwareDuration = 0;
+softwareDuration = 0;
+
+before = time();
+acquire(1,testSig);
+duration = time() - before;
 
 
-T=WINDOW(ch1);
-N=count(ch1);
-measuredExtremums1 = signal(1,switches,false);
-measuredExtremums2 = signal(1,switches,false);
-measuredExtremums3 = signal(1,switches,false);
-measuredExtremums4 = signal(1,switches,false);
-measuredExtremums1 = 0;
-measuredExtremums2 = 0;
-measuredExtremums3 = 0;
-measuredExtremums4 = 0;
-measuredSignals1 = matrix(switches, N);
-measuredSignals2 = matrix(switches, N);
-measuredSignals3 = matrix(switches, N);
-measuredSignals4 = matrix(switches, N);
-
-baseSignals = matrix(4,N);
-
-set_trans_mask(15);
-set_trans_mask(14);
-sleep(pausems);
-
-acquire(1, back1);
-set_matrix_row(baseSignals,0,back1);
-	
-set_trans_mask(15);
-set_trans_mask(13);
-sleep(pausems);
-
-acquire(2, back2);
-set_matrix_row(baseSignals,1,back2);
-
-set_trans_mask(15);
-set_trans_mask(11);
-sleep(pausems);
-
-acquire(3, back3);
-set_matrix_row(baseSignals,2,back3);
-
-set_trans_mask(15);
-set_trans_mask(7);
-sleep(pausems);
-
-acquire(4,back4);
-set_matrix_row(baseSignals,3,back4);
-
-set_trans_mask(15);
-set_trans_mask(14);
-sleep(pauseCyclems);
-
-for (ia = 0; ia < switches; ia = ia +1)
+if (duration < pauseDuration)//make measurement
 {
-	  acquire(1, back1);
-	  tempSig = get_matrix_row(baseSignals, 0);
-	  set_label(tempSig,T,"ns","mV");
-	  (dt)=difference2(tempSig,back1);
-	  dt = -dt;
-	  tempSig = push2(tempSig,dt);
-	  differSignal = lf(back1- tempSig, maxFreq, 1.5*maxFreq, -6);
-	  pos = 0;
-	  maxVal = max(differSignal, pos);
-	  minVal = -min(differSignal, pos);
-	  if (maxVal > minVal)
+	  //software acquisition first
+	  acquire(1,base);
+	  base = lf(base, maxFreq, 1.5*maxFreq, -6);
+	  before = time();
+	  for (ia = 0; ia < measurements; ia = ia + 1)
 	  {
-		    measuredExtremums1[ia] = maxVal;
+		    beforeMeas = time();
+		    acquire(1,current);
+		    current = lf(current, maxFreq, 1.5*maxFreq, -6);
+		    (dt) = difference2(base, current);
+		    currentShifted = push2(current, dt);
+		    afterMeas = time();
+		    softwareDuration = softwareDuration + afterMeas - beforeMeas;
+		    differenceSig = currentShifted - base;
+		    
+		    pos = 0;
+		    valMax = max(differenceSig, pos);
+		    valMin = min(differenceSig, pos);
+		    valMin = -valMin;
+		    if (valMax < valMin)
+		    {
+			      valMin = valMax;
+		    }
+		    measuredSoftwareExtremums[ia] = valMax;
+		    (dt) = difference2(base, currentShifted);
+		    delaysAfterSoftwareCorrection[ia] = dt;
+		    afterMeas = time();
+		    
+		    sleep((ia+ 1)*pauseDuration - afterMeas + before);
 	  }
-	  else
-	  {
-		    measuredExtremums1[ia] = minVal;
-	  }
-	  set_matrix_row(measuredSignals1, ia, back1);
-		  
-	  set_trans_mask(15);
-	  set_trans_mask(13);
-	  sleep(pausems);
-
-	  acquire(2, back2);
-	  tempSig = get_matrix_row(baseSignals, 1);
-	  set_label(tempSig,T,"ns","mV");
-	  (dt)=difference2(tempSig,back2);
-	  dt = -dt;
-	  tempSig = push2(tempSig,dt);
-	  differSignal = lf(back2- tempSig, maxFreq, 1.5*maxFreq, -6);
-	  pos = 0;
-	  maxVal = max(differSignal, pos);
-	  minVal = -min(differSignal, pos);
-	  if (maxVal > minVal)
-	  {
-		    measuredExtremums2[ia] = maxVal;
-	  }
-	  else
-	  {
-		    measuredExtremums2[ia] = minVal;
-	  }
-	  set_matrix_row(measuredSignals1, ia, back1);
-
-	  set_trans_mask(15);
-	  set_trans_mask(11);
-	  sleep(pausems);
-
-	  acquire(3, back3);
-	  tempSig = get_matrix_row(baseSignals, 2);
-	  set_label(tempSig,T,"ns","mV");
-	  (dt)=difference2(tempSig,back3);
-	  dt = -dt;
-	  tempSig = push2(tempSig,dt);
-	  differSignal = lf(back3- tempSig, maxFreq, 1.5*maxFreq, -6);
-	  pos = 0;
-	  maxVal = max(differSignal, pos);
-	  minVal = -min(differSignal, pos);
-	  if (maxVal > minVal)
-	  {
-		    measuredExtremums3[ia] = maxVal;
-	  }
-	  else
-	  {
-		    measuredExtremums3[ia] = minVal;
-	  }
-	  set_matrix_row(measuredSignals1, ia, back1);
-
-	  set_trans_mask(15);
-	  set_trans_mask(7);
-	  sleep(pausems);
-
-	  acquire(4,back4);
-	  tempSig = get_matrix_row(baseSignals, 3);
-	  set_label(tempSig,T,"ns","mV");
-	  (dt)=difference2(tempSig,back4);
-	  dt = -dt;
-	  tempSig = push2(tempSig,dt);
-	  differSignal = lf(back4- tempSig, maxFreq, 1.5*maxFreq, -6);
-	  pos = 0;
-	  maxVal = max(differSignal, pos);
-	  minVal = -min(differSignal, pos);
-	  if (maxVal > minVal)
-	  {
-		    measuredExtremums4[ia] = maxVal;
-	  }
-	  else
-	  {
-		    measuredExtremums4[ia] = minVal;
-	  }
-	  set_matrix_row(measuredSignals1, ia, back1);
-
-	  set_trans_mask(15);
-	  set_trans_mask(14);
+	  softwareDuration = softwareDuration/measurements;
 	  
-	  sleep(pauseCyclems);
+	  print_line("Set hardware phase stabilization now and press Continue");
+	  pause();
+	  
+	  acquire(1,base);
+	  base = lf(base, maxFreq, 1.5*maxFreq, -6);
+	  before = time();
+	  for (ia = 0; ia < measurements; ia = ia + 1)
+	  {
+		    beforeMeas = time();
+		    acquire(1,current);
+		    afterMeas = time();
+		    hardwareDuration = hardwareDuration + afterMeas - beforeMeas;
+		    differenceSig = current - base;
+		    
+		    pos = 0;
+		    valMax = max(differenceSig, pos);
+		    valMin = min(differenceSig, pos);
+		    valMin = -valMin;
+		    if (valMax < valMin)
+		    {
+			      valMin = valMax;
+		    }
+		    measuredHardwareExtremums[ia] = valMax;
+		    (dt) = difference2(base, current);
+		    delaysAfterHardwareCorrection[ia] = dt;
+		    afterMeas = time();
+		    
+		    sleep((ia+ 1)*pauseDuration - afterMeas + before);
+	  }
+	  hardwareDuration = hardwareDuration/measurements;
 }
-	
-r1 = measuredExtremums1;
-r2 = measuredExtremums2;
-r3 = measuredExtremums3;
-r4 = measuredExtremums4;
-
-if (switches > 1)
+else
 {
-	  rms_of_extremums_switch1 = stdev(r1);
-	  rms_of_extremums_switch2 = stdev(r2);
-	  rms_of_extremums_switch3 = stdev(r3);
-	  rms_of_extremums_switch4 = stdev(r4);
-	  
-	  mean_of_extremums_switch1 = mean(r1);
-	  mean_of_extremums_switch2 = mean(r2);
-	  mean_of_extremums_switch3 = mean(r3);
-	  mean_of_extremums_switch4 = mean(r4);
-	  out(rms_of_extremums_switch4, rms_of_extremums_switch3, rms_of_extremums_switch2, rms_of_extremums_switch1);
-	  out(mean_of_extremums_switch4, mean_of_extremums_switch3, mean_of_extremums_switch2, mean_of_extremums_switch1);
+	  print_line("set pulseDuration to bigger number or reduce averaging");
 }
+
+
+r1 = delaysAfterSoftwareCorrection;
+r2 = delaysAfterHardwareCorrection;
+r3 = measuredSoftwareExtremums;
+r4 = measuredHardwareExtremums;
+
+average_hardware_duration = hardwareDuration;
+average_software_duration = softwareDuration;
+
+out(average_hardware_duration, average_software_duration);
