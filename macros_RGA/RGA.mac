@@ -1,4 +1,10 @@
 //macro, implementing Running Gausian Average as standalone module
+//registers 1 to 5 used for output
+//r1 - difference of current signal and mean signal
+//r2 - current standard deviation for each point of signal
+//r3 - current mean values of each point in signal
+//r4 - detection mask, values from 0 to 1
+//r5 - difference multiplied by mask, should be much cleaner than r1
 fromFile = false;//set to true, if loading from file, filePath should be existing signal
 fromChannel = 1;//from which channel to acquire, if fromFile set to false
 filePath = "C:\multitarget_data\day_8_test1_square2.sig";//valid path to file with measurement signals
@@ -7,13 +13,13 @@ displace = 6;//starting displace in signals file
 totalMeasNum = 100;//how many measurements are performed (from file or from device)
 
 //Actual RGA parameters
-startingStd = 1000;//parameter
-initFrames = 10;//parameter
+startingStd = 1000;//parameter, large value of standard deviation, if no initialization is present
+initFrames = 4;//parameter
 foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
 backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
 learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
 learningRateMult = 0.95;//parameter, how much of the learning rate it is left for next measurment
-learningRateFloor = 0.1;//lowest possible learning rate value, set to same value like learningRate for constant learning rate
+learningRateFloor = 0.05;//lowest possible learning rate value, set to same value like learningRate for constant learning rate
 kernelSize = 7;//parameter, how much model values should be smoothed
 //end of RGA parameters
 
@@ -64,9 +70,11 @@ if (initFrames > 1)
 		    }
 		    currentFrame = currentSignal - meanValues;
 		    stdValues = learningRateFloor*currentFrame*currentFrame + (1 - learningRate)*stdValues;//update of std
+		    stdValues = ifft(fft(stdValues)*fft(extendedKernel));//low pass
 		    meanValues = (1 - learningRateFloor)*meanValues + learningRateFloor*currentSignal;
 	  }
 }
+
 
 for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 {
@@ -97,7 +105,7 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 	  {
 		    if (abs(currentFrame[ia]) > foregroundThreshold*currentDeviations[ia])
 		    {
-			      currentMask[ia] = 1;
+			      mask[ia] = 1;
 		    }
 		    else
 		    {
@@ -112,8 +120,9 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 	  currentDeviations = learningRate*currentFrame*currentFrame + (1 - learningRate)*currentDeviations*currentDeviations;//update of std
 	  currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));//low pass
 	  meanValues = learningRate*(1-mask)*currentSignal + (1 -  learningRate*(1-mask))*meanValues;//mean update, only where mask nonzero
-	  stdValues = currentDeviations*currentDeviations;
+	  stdValues = currentDeviations;
 	  r4 = mask;
+	  r5 = mask*r1;
 			      
 	  learningRate = learningRate*learningRateMult;
 	  if (learningRate < learningRateFloor)
