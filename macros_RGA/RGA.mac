@@ -18,8 +18,8 @@ initFrames = 4;//parameter
 foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
 backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
 learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
-learningRateMult = 0.95;//parameter, how much of the learning rate it is left for next measurment
-learningRateFloor = 0.05;//lowest possible learning rate value, set to same value like learningRate for constant learning rate
+learningRateMult = 0.95;//metaparameter, how much of the learning rate it is left for next measurment
+learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
 kernelSize = 7;//parameter, how much model values should be smoothed
 //end of RGA parameters
 
@@ -101,6 +101,7 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 					
 	  mask = currentDeviations;
 	  mask = 0;
+	  //checking of thresholds
 	  for (ia = 0; ia < N; ia = ia + 1)
 	  {
 		    if (abs(currentFrame[ia]) > foregroundThreshold*currentDeviations[ia])
@@ -117,6 +118,8 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 	  }
 
 	  mask = ifft(fft(mask)*fft(extendedKernel));//low pass
+	  
+	  //update of model
 	  currentDeviations = learningRate*currentFrame*currentFrame + (1 - learningRate)*currentDeviations*currentDeviations;//update of std
 	  currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));//low pass
 	  meanValues = learningRate*(1-mask)*currentSignal + (1 -  learningRate*(1-mask))*meanValues;//mean update, only where mask nonzero
@@ -124,6 +127,7 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 	  r4 = mask;
 	  r5 = mask*r1;
 			      
+	  //update of learning rate
 	  learningRate = learningRate*learningRateMult;
 	  if (learningRate < learningRateFloor)
 	  {
