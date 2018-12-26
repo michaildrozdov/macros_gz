@@ -1,5 +1,6 @@
 savefile = 0;
-saveto = "C:\multitarget_data\day_8_2man_squarewith hands.sig";
+saveto = "C:\multitarget_data\day_8_test1_square2.sig";
+//saveto = "C:\multitarget_data\day_8_2man_squarewith hands.sig";
 //saveto = "C:\shanghai_misha\field_signals\efremov150810_60deg_test.sig";
 anglestart = 0;
 angleend = 10;
