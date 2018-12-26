@@ -1,0 +1,149 @@
+//macro, implementing Running Gausian Average as standalone module
+//registers 1 to 5 used for output
+//r1 - difference of current signal and mean signal
+//r2 - current standard deviation for each point of signal
+//r3 - current mean values of each point in signal
+//r4 - detection mask, values from 0 to 1
+//r5 - difference multiplied by mask, should be much cleaner than r1
+//r6 - signal, created from averaging previous signals and using those as background. Used as comparison to RGA
+fromFile = true;//set to true, if loading from file, filePath should be existing signal
+fromChannel = 1;//from which channel to acquire, if fromFile set to false
+filePath = "C:\multitarget_data\day_8_2man_squarewithught hands.sig";//valid path to file with measurement signals
+signalsPerCycle = 8;//how many signals were acquired in file per one measurement cycle (8 for 8ch acquisition)
+displace = 6;//starting displace in signals file
+totalMeasNum = 100;//how many measurements are performed (from file or from device)
+
+//Actual RGA parameters
+startingStd = 1000;//parameter, large value of standard deviation, if no initialization is present
+initFrames = 4;//parameter
+foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
+backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
+learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
+learningRateMult = 0.95;//metaparameter, how much of the learning rate it is left for next measurment
+learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
+kernelSize = 7;//parameter, how much model values should be smoothed
+//end of RGA parameters
+
+//Averaging parameter (comparison)
+averagingMemory = 0;//if 1 - stationary back subtraction, if 0 - prev frame subtraction, can be 0 to 1
+
+pauseDuration = 300;//ms, to view process
+
+
+if (fromFile)
+{
+	  prev1 = sig_read(filePath, displace);
+	  displace = displace + signalsPerCycle;
+}
+else
+{
+	  acquire(fromChannel, prev1);
+}
+
+N = count(prev1);
+T = window(prev1);
+
+N = count(prev1);
+T = window(prev1);
+
+meanValues = prev1;
+stdValues = prev1;
+stdValues = startingStd;
+
+kernel = signal(1,kernelSize,false);
+kernel = sqrt(2);
+extendedKernel = prev1;
+extendedKernel = 0;
+insert(kernel, 0, kernelSize - 1,extendedKernel, 0);
+
+if (initFrames > 1)
+{
+	  //initialization
+	  //should do with non recurrent relations
+	  stdValues = 0.5*meanValues;
+	  for (ind = 0; ind < initFrames; ind = ind + 1)
+	  {
+		    if (fromFile)
+		    {
+			      currentSignal = sig_read(filePath, displace);
+			      displace = displace + signalsPerCycle;
+		    }
+		    else
+		    {
+			      acquire(fromChannel, currentSignal);
+		    }
+		    currentFrame = currentSignal - meanValues;
+		    stdValues = learningRateFloor*currentFrame*currentFrame + (1 - learningRate)*stdValues;//update of std
+		    stdValues = ifft(fft(stdValues)*fft(extendedKernel));//low pass
+		    meanValues = (1 - learningRateFloor)*meanValues + learningRateFloor*currentSignal;
+	  }
+}
+
+
+for (ind = 0; ind < totalMeasNum; ind = ind + 1)
+{
+	  if (fromFile)
+	  {
+		    currentSignal = sig_read(filePath, displace);
+		    currentFrame = currentSignal - meanValues;
+		    displace = displace + signalsPerCycle;
+	  }
+	  else
+	  {
+		    acquire(fromChannel, currentSignal);
+		    currentFrame = currentSignal - meanValues;  
+	  }
+	  if (ind == 0)
+	  {
+		    prevSignal = ifft(fft(currentSignal)*fft(extendedKernel));//low pass
+	  }
+
+	  currentFrame = ifft(fft(currentFrame)*fft(extendedKernel));//low pass
+	  r1 = currentFrame;
+
+	  currentDeviations = sqrt(stdValues);
+	  r2 = currentDeviations;
+
+	  r3 = meanValues;
+
+					
+	  mask = currentDeviations;
+	  mask = 0;
+	  //checking of thresholds
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    if (abs(currentFrame[ia]) > foregroundThreshold*currentDeviations[ia])
+		    {
+			      mask[ia] = 1;
+		    }
+		    else
+		    {
+			      if (abs(currentFrame[ia]) > backgroundThreshold*currentDeviations[ia])
+			      {
+					mask[ia] = (abs(currentFrame[ia]) - backgroundThreshold*currentDeviations[ia])/(foregroundThreshold - backgroundThreshold)/currentDeviations[ia];
+			      }
+		    }
+	  }
+
+	  mask = ifft(fft(mask)*fft(extendedKernel));//low pass
+	  
+	  //update of model
+	  currentDeviations = learningRate*(1-mask)*currentFrame*currentFrame + (1 - learningRate*(1-mask))*currentDeviations*currentDeviations;//update of std
+	  currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));//low pass
+	  meanValues = learningRate*(1-mask)*currentSignal + (1 -  learningRate*(1-mask))*meanValues;//mean update, only where mask nonzero
+	  stdValues = currentDeviations;
+	  r4 = mask;
+	  r5 = mask*r1;
+	  r6 = currentSignal - prevSignal;
+	  prevSignal = averagingMemory*prevSignal + (1 - averagingMemory)*ifft(fft(currentSignal)*fft(extendedKernel));//low pass;
+			      
+	  //update of learning rate
+	  learningRate = learningRate*learningRateMult;
+	  if (learningRate < learningRateFloor)
+	  {
+		    learningRate = learningRateFloor;
+	  }
+	  
+	  sleep(pauseDuration);
+}
+
