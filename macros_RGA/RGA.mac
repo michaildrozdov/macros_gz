@@ -5,9 +5,10 @@
 //r3 - current mean values of each point in signal
 //r4 - detection mask, values from 0 to 1
 //r5 - difference multiplied by mask, should be much cleaner than r1
-fromFile = false;//set to true, if loading from file, filePath should be existing signal
+//r6 - signal, created from averaging previous signals and using those as background. Used as comparison to RGA
+fromFile = true;//set to true, if loading from file, filePath should be existing signal
 fromChannel = 1;//from which channel to acquire, if fromFile set to false
-filePath = "C:\multitarget_data\day_8_test1_square2.sig";//valid path to file with measurement signals
+filePath = "C:\multitarget_data\day_8_2man_squarewithught hands.sig";//valid path to file with measurement signals
 signalsPerCycle = 8;//how many signals were acquired in file per one measurement cycle (8 for 8ch acquisition)
 displace = 6;//starting displace in signals file
 totalMeasNum = 100;//how many measurements are performed (from file or from device)
@@ -22,6 +23,9 @@ learningRateMult = 0.95;//metaparameter, how much of the learning rate it is lef
 learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
 kernelSize = 7;//parameter, how much model values should be smoothed
 //end of RGA parameters
+
+//Averaging parameter (comparison)
+averagingMemory = 0;//if 1 - stationary back subtraction, if 0 - prev frame subtraction, can be 0 to 1
 
 pauseDuration = 300;//ms, to view process
 
@@ -89,6 +93,10 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 		    acquire(fromChannel, currentSignal);
 		    currentFrame = currentSignal - meanValues;  
 	  }
+	  if (ind == 0)
+	  {
+		    prevSignal = ifft(fft(currentSignal)*fft(extendedKernel));//low pass
+	  }
 
 	  currentFrame = ifft(fft(currentFrame)*fft(extendedKernel));//low pass
 	  r1 = currentFrame;
@@ -120,12 +128,14 @@ for (ind = 0; ind < totalMeasNum; ind = ind + 1)
 	  mask = ifft(fft(mask)*fft(extendedKernel));//low pass
 	  
 	  //update of model
-	  currentDeviations = learningRate*currentFrame*currentFrame + (1 - learningRate)*currentDeviations*currentDeviations;//update of std
+	  currentDeviations = learningRate*(1-mask)*currentFrame*currentFrame + (1 - learningRate*(1-mask))*currentDeviations*currentDeviations;//update of std
 	  currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));//low pass
 	  meanValues = learningRate*(1-mask)*currentSignal + (1 -  learningRate*(1-mask))*meanValues;//mean update, only where mask nonzero
 	  stdValues = currentDeviations;
 	  r4 = mask;
 	  r5 = mask*r1;
+	  r6 = currentSignal - prevSignal;
+	  prevSignal = averagingMemory*prevSignal + (1 - averagingMemory)*ifft(fft(currentSignal)*fft(extendedKernel));//low pass;
 			      
 	  //update of learning rate
 	  learningRate = learningRate*learningRateMult;
