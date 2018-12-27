@@ -22,6 +22,19 @@ maxVel = 1.5;//m/s
 deltaT = 2;//s expected duration between frames, will be updated
 
 thresholdValue = 200;//checked of power
+
+//Actual RGA parameters
+startingStd = 1000;//parameter, large value of standard deviation, if no initialization is present
+initFrames = 4;//parameter
+foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
+backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
+learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
+learningRateMult = 0.95;//metaparameter, how much of the learning rate it is left for next measurment
+learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
+kernelSize = 7;//parameter, how much model values should be smoothed
+//end of RGA parameters
+
+
 if (useRGA)
 {
 	thresholdValue = 5;  
@@ -129,17 +142,6 @@ stdevStep = 2*floor(N/skipSize/5/2);//when calculating variable threshold, it is
 //one calculation
 thresholdValuesLocal = signal(1, N/skipSize, false);//array, which will be used to store variable (with point in signal) threshold
 stddevLocalCalcArray = signal(1, stdevStep, false);//array to store region of power signal for quick mean and stdev calculation
-
-//Actual RGA parameters
-startingStd = 1000;//parameter, large value of standard deviation, if no initialization is present
-initFrames = 4;//parameter
-foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
-backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
-learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
-learningRateMult = 0.95;//metaparameter, how much of the learning rate it is left for next measurment
-learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
-kernelSize = 7;//parameter, how much model values should be smoothed
-//end of RGA parameters
 
 meanValues = matrix(8,N);
 stdValuesArr = signal(T,N,false);
