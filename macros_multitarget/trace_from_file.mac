@@ -24,7 +24,7 @@ deltaT = 2;//s expected duration between frames, will be updated
 thresholdValue = 200;//checked of power
 if (useRGA)
 {
-	thresholdValue = 0.5;  
+	thresholdValue = 5;  
 }
 pulseDuration = 2;//duration for integration, when calculating power from difference
 falloffDuration = 0.5;//duration of falloff in integration window, when calculating power from difference
@@ -360,7 +360,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  ffilt2 = 4.5;//GHz
 	  if (useRGA)
 	  {
-		    print_line("");
+		    //print_line("");
 		    for (ka = 0; ka < 8; ka = ka + 1)
 		    { 
 			      currentFrame = get_matrix_row(currentSignal, ka) - get_matrix_row(meanValues, ka);
@@ -675,14 +675,14 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    }
 		    //Finding fronts and zero padding
 
-		    r9 = get_matrix_row(longDifference, 0);
-		    r10 = get_matrix_row(longDifference, 1);
-		    r11 = get_matrix_row(longDifference, 2);
-		    r12 = get_matrix_row(longDifference, 3);
-		    r13 = get_matrix_row(longDifference, 4);
-		    r14 = get_matrix_row(longDifference, 5);
-		    r15 = get_matrix_row(longDifference, 6);
-		    r16 = get_matrix_row(longDifference, 7);
+		    //r9 = get_matrix_row(longDifference, 0);
+		    //r10 = get_matrix_row(longDifference, 1);
+		    //r11 = get_matrix_row(longDifference, 2);
+		    //r12 = get_matrix_row(longDifference, 3);
+		    //r13 = get_matrix_row(longDifference, 4);
+		    //r14 = get_matrix_row(longDifference, 5);
+		    //r15 = get_matrix_row(longDifference, 6);
+		    //r16 = get_matrix_row(longDifference, 7);
 
 		    //thresholdValue = 0.05*max(get_matrix_row(longDifference, 3), pos);
 		    //print_line("Signals displayed");
@@ -717,7 +717,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      
 			      if (thresholdReached)
 			      {
-					print_line("Threshold reached for delay ", distance);
+					//print_line("Threshold reached for delay ", distance);
 					for (angle = 0; angle < anglesNum; angle = angle + 1)
 					{
 						  delayPerAntenna = d/c*N/T*8*sin((angle*angleSpaceStep-45)*pi()/180);
@@ -850,9 +850,9 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 								      targetsUsedAngle[targetsFound] = totalAngle/totalWeight*angleSpaceStep-50;
 								      targetsUsedMaximum[targetsFound] = absoluteMax;
 								      targetsUsedDispersion[targetsFound] = totalDisp/anglesNum*skipSize/(ind2 - ind11 + 1);
-								      print_line("Absolute maximum ", absoluteMax);
-								      tempDisp = targetsUsedDispersion[targetsFound];
-								      print_line("Dispersion ", tempDisp);
+								      //print_line("Absolute maximum ", absoluteMax);
+								      //tempDisp = targetsUsedDispersion[targetsFound];
+								      //print_line("Dispersion ", tempDisp);
 								      if (targetsUsedDispersion[targetsFound] > 20*targetsUsedMaximum[targetsFound])
 								      {
 										//only increase target count, if it is not some near constant blob
@@ -932,7 +932,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      {
 					effectiveSize = floor(imageSizeX/2);
 			      }
-			      print_line("Effective size of target ", ia, " is ", effectiveSize);
+			      //print_line("Effective size of target ", ia, " is ", effectiveSize);
 
 			      //filling image matrix region with target
 			      for (xInd = -effectiveSize; xInd < effectiveSize; xInd = xInd + 1)
@@ -976,7 +976,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  time_mark2 = time()-before;
 	  out(time_mark2);
 	  
-	  pause();
+	  //pause();
 	  
 	  next:
 }
