@@ -1,0 +1,108 @@
+//macro for testing hardware and software phase stabilization
+//outputs:
+//r1 - delays left after software correction
+//r2 - delays left after hardware correction
+//r3 - maximum difference after software correction
+//r4 - maximum difference after hardware correction
+//observe Variables window for average duration per software and hardware corrction cycle
+//difference2.mac should be included in same directory as this macro
+//run measurement without hardware phase stabilization first
+//after pause turn hardware phase stabilization and press Continue
+clear_variables();
+
+pauseDuration = 1000;//ms, should be longer than it takes to acquire one signal
+measurements = 50;// total duration will be 2*pauseDuration*measurements/1000 s
+maxFreq = 6;//should be set to low value to simulate filtering of reference channel, should be same as for hardware filter
+
+delaysAfterHardwareCorrection = signal(1, measurements, false);
+delaysAfterSoftwareCorrection = signal(1, measurements, false);
+measuredHardwareExtremums = signal(1, measurements,false);
+measuredSoftwareExtremums = signal(1, measurements,false);
+hardwareDuration = 0;
+softwareDuration = 0;
+
+before = time();
+acquire(1,testSig);
+duration = time() - before;
+
+
+if (duration < pauseDuration)//make measurement
+{
+	  //software acquisition first
+	  acquire(1,base);
+	  base = lf(base, maxFreq, 1.5*maxFreq, -6);
+	  before = time();
+	  for (ia = 0; ia < measurements; ia = ia + 1)
+	  {
+		    beforeMeas = time();
+		    acquire(1,current);
+		    current = lf(current, maxFreq, 1.5*maxFreq, -6);
+		    (dt) = difference2(base, current);
+		    currentShifted = push2(current, dt);
+		    afterMeas = time();
+		    softwareDuration = softwareDuration + afterMeas - beforeMeas;
+		    differenceSig = currentShifted - base;
+		    
+		    pos = 0;
+		    valMax = max(differenceSig, pos);
+		    valMin = min(differenceSig, pos);
+		    valMin = -valMin;
+		    if (valMax < valMin)
+		    {
+			      valMin = valMax;
+		    }
+		    measuredSoftwareExtremums[ia] = valMax;
+		    (dt) = difference2(base, currentShifted);
+		    delaysAfterSoftwareCorrection[ia] = dt;
+		    afterMeas = time();
+		    
+		    sleep((ia+ 1)*pauseDuration - afterMeas + before);
+	  }
+	  softwareDuration = softwareDuration/measurements;
+	  
+	  print_line("Set hardware phase stabilization now and press Continue");
+	  pause();
+	  
+	  acquire(1,base);
+	  base = lf(base, maxFreq, 1.5*maxFreq, -6);
+	  before = time();
+	  for (ia = 0; ia < measurements; ia = ia + 1)
+	  {
+		    beforeMeas = time();
+		    acquire(1,current);
+		    afterMeas = time();
+		    hardwareDuration = hardwareDuration + afterMeas - beforeMeas;
+		    differenceSig = current - base;
+		    
+		    pos = 0;
+		    valMax = max(differenceSig, pos);
+		    valMin = min(differenceSig, pos);
+		    valMin = -valMin;
+		    if (valMax < valMin)
+		    {
+			      valMin = valMax;
+		    }
+		    measuredHardwareExtremums[ia] = valMax;
+		    (dt) = difference2(base, current);
+		    delaysAfterHardwareCorrection[ia] = dt;
+		    afterMeas = time();
+		    
+		    sleep((ia+ 1)*pauseDuration - afterMeas + before);
+	  }
+	  hardwareDuration = hardwareDuration/measurements;
+}
+else
+{
+	  print_line("set pulseDuration to bigger number or reduce averaging");
+}
+
+
+r1 = delaysAfterSoftwareCorrection;
+r2 = delaysAfterHardwareCorrection;
+r3 = measuredSoftwareExtremums;
+r4 = measuredHardwareExtremums;
+
+average_hardware_duration = hardwareDuration;
+average_software_duration = softwareDuration;
+
+out(average_hardware_duration, average_software_duration);
