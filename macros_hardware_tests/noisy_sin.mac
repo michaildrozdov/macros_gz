@@ -1,0 +1,85 @@
+//macro for checking:
+//maximums - r2
+//minimums - r3
+//standard deviations - r4
+//and histograms - matrix output + r5
+//of signals, which are acquired in specified duration
+//reference frequencies signal is shown in r6
+
+N = 2048;//for test signal, ignore if acquiring actual signal
+x = signal(1,N,false);
+randAmount = 0;
+
+totalDuration = 10;//s, how long macro will run
+histogramIntervals = 256;//into how many bins histogram is split
+histogramMaxDisplace = 1000;//what is maximum possible signal, minimum signal is inverted maximum signal, if any value in signal exceeds this, macro will crash
+displayInterval = 10;//which measurement histogram to show, zero based
+freqStart = 10;//GHz
+freqEnd = 15;//GHz, must be more that freqStart
+
+
+//calculation of acquisition duration
+testDuration = time();
+acquire(1, dummy);
+N = count(dummy);//actual number of points
+//sleep(100);//for test
+testDuration = time() - testDuration;//ms per acquisition
+
+totalNumber = floor(totalDuration*1000/testDuration);
+allMaximums = signal(1, totalNumber, false);
+allMinimums = signal(1, totalNumber,false);
+allStdevs = signal(1, totalNumber,false);
+freqs=signal(1, totalNumber,false);
+
+
+//building frequencies signal
+for (ka = 0; ka < totalNumber; ka = ka + 1)
+{
+	  freqs[ka] = freqStart + ka/(totalNumber - 1)*(freqEnd - freqStart);
+}
+
+histograms = matrix(totalNumber, histogramIntervals);//matrix to store histograms
+
+for (ka = 0; ka < totalNumber; ka = ka + 1)
+{
+	  //creating test signal
+	  //for (ia = 0; ia < N; ia=ia + 1)
+	  //{
+		    //x[ia] = 500*sin(ia/32*pi()) + randAmount*(rand() - 0.5);
+	  //}
+	  
+	  //getting signal
+	  acquire(1,x);
+
+	  //displaying signal
+	  r1 = x;
+	  
+	  //min,max,stdev
+	  pos = 0;
+	  maxVal = max(x,pos);
+	  allMaximums[ka] = maxVal;
+	  
+	  minVal = min(x,pos);
+	  allMinimums[ka] = minVal;
+	  
+	  allStdevs[ka] = stdev(x);
+	  
+	  //creating histogram, no knowledge about amplitude of signal is assumed, so histogram is covering +/-1V
+	  currentHistogram = signal(1, histogramIntervals,false);
+	  currentHistogram = 0;
+	  for (ia = 0; ia < N; ia=ia + 1)
+	  {
+		    binNumber = (histogramIntervals - 1)*(x[ia]+histogramMaxDisplace)/histogramMaxDisplace/2;
+		    currentHistogram[binNumber] = currentHistogram[binNumber]+1;
+	  }
+	  set_matrix_row(histograms, ka,currentHistogram);
+	  sleep(90);
+}
+
+draw(histograms);
+r2 = allMaximums;
+r3 = allMinimums;
+r4 = allStdevs;
+r5 = r2;//getting proper time scale
+r5 = get_matrix_row(histograms, displayInterval);
+r6 = freqs;
