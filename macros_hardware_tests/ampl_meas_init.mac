@@ -1,0 +1,5 @@
+currentMeasurement = 0;
+totalMeasurements = 100;
+
+//allAmplitudes = signal(1,totalMeasurements, false);
+//allAmplitudes = 0;

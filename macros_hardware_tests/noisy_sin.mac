@@ -2,20 +2,26 @@
 //maximums - r2
 //minimums - r3
 //standard deviations - r4
-//and histograms - matrix output + r5
+//upper signal part most probable value given by histogram last extremum - r8
+//lower signal part most probable value given by histogram first extremum - r9
+//and last collected histogram (with threshold applied) - r10
 //of signals, which are acquired in specified duration
 //reference frequencies signal is shown in r6
+//average signal amplitude (calculated from histograms) is shown in r7 and also put in allAmplitudes array
+//change maximum = mean(r8); (line 153) and minimum = mean(r9); (line 154)
+//to maximum = mean(r2); (line 153) and minimum = mean(r3); (line 154) for absolute signal amplitudes
 
-N = 2048;//for test signal, ignore if acquiring actual signal
+clear_variables();
+N = 1000;//for test signal, ignore if acquiring actual signal
 x = signal(1,N,false);
 randAmount = 0;
-
-totalDuration = 10;//s, how long macro will run
+totalDuration = 2;//s, how long macro will run
 histogramIntervals = 256;//into how many bins histogram is split
 histogramMaxDisplace = 1000;//what is maximum possible signal, minimum signal is inverted maximum signal, if any value in signal exceeds this, macro will crash
+histogramThreshold = 0.5;//at which percentage (0.5 is half amplitude) histogram threshold will be performed, both histogram maximums should be above this
 displayInterval = 10;//which measurement histogram to show, zero based
-freqStart = 10;//GHz
-freqEnd = 15;//GHz, must be more that freqStart
+freqStart = 29;//GHz
+freqEnd = 31;//GHz, must be more that freqStart
 
 
 //calculation of acquisition duration
@@ -28,6 +34,8 @@ testDuration = time() - testDuration;//ms per acquisition
 totalNumber = floor(totalDuration*1000/testDuration);
 allMaximums = signal(1, totalNumber, false);
 allMinimums = signal(1, totalNumber,false);
+allHistMaximums = signal(1, totalNumber, false);
+allHistMinimums = signal(1, totalNumber,false);
 allStdevs = signal(1, totalNumber,false);
 freqs=signal(1, totalNumber,false);
 
@@ -39,6 +47,8 @@ for (ka = 0; ka < totalNumber; ka = ka + 1)
 }
 
 histograms = matrix(totalNumber, histogramIntervals);//matrix to store histograms
+currentHistogram = signal(1, histogramIntervals,false);
+partialHistogram = signal(1, histogramIntervals,false);
 
 for (ka = 0; ka < totalNumber; ka = ka + 1)
 {
@@ -65,21 +75,86 @@ for (ka = 0; ka < totalNumber; ka = ka + 1)
 	  allStdevs[ka] = stdev(x);
 	  
 	  //creating histogram, no knowledge about amplitude of signal is assumed, so histogram is covering +/-1V
-	  currentHistogram = signal(1, histogramIntervals,false);
+	  
 	  currentHistogram = 0;
 	  for (ia = 0; ia < N; ia=ia + 1)
 	  {
 		    binNumber = (histogramIntervals - 1)*(x[ia]+histogramMaxDisplace)/histogramMaxDisplace/2;
 		    currentHistogram[binNumber] = currentHistogram[binNumber]+1;
 	  }
-	  set_matrix_row(histograms, ka,currentHistogram);
-	  sleep(90);
+	  histMax = max(currentHistogram,pos);
+	  
+	  //threshold of half amplitude of historgram
+	  for (ia = 0; ia < histogramIntervals; ia = ia + 1)
+	  {
+		    if (currentHistogram[ia] < histMax*histogramThreshold)
+		    {
+			      currentHistogram[ia] = 0;
+		    }
+		    else
+		    {
+			   currentHistogram[ia] = currentHistogram[ia] - histMax*histogramThreshold;   
+		    }
+	  }
+	  max1 = 0;
+	  partialHistogram = 0;
+	  for (ia = 0; ia < histogramIntervals; ia = ia + 1)
+	  {
+		    if (currentHistogram[ia] > 0)
+		    {
+			      for (la = ia; la < histogramIntervals; la = la + 1)
+			      {
+					if (currentHistogram[la] == 0)
+					{
+						  insert(currentHistogram, ia,la-1, partialHistogram, ia);
+						  maxVal = max(partialHistogram, max1);
+						  goto firstmaxfound;
+					}
+			      }
+		    }
+	  }
+	  firstmaxfound:
+	  max2 = 0;
+	  partialHistogram = 0;
+	  for (ia = histogramIntervals-1; ia >= 0; ia = ia - 1)
+	  {
+		    if (currentHistogram[ia] > 0)
+		    {
+			      for (la = ia; la >= 0; la = la - 1)
+			      {
+					if (currentHistogram[la] == 0)
+					{
+						  insert(currentHistogram, la+1,ia, partialHistogram, la+1);
+						  maxVal = max(partialHistogram, max2);
+						  goto secondmaxfound;
+					}
+			      }
+		    }
+	  }
+	  secondmaxfound:
+	  allHistMaximums[ka] = max2/histogramIntervals*2*histogramMaxDisplace - histogramMaxDisplace;
+	  allHistMinimums[ka] = max1/histogramIntervals*2*histogramMaxDisplace - histogramMaxDisplace;
+	  //set_matrix_row(histograms, ka,currentHistogram);
+	 // sleep(90);
 }
 
-draw(histograms);
+//draw(histograms);
 r2 = allMaximums;
 r3 = allMinimums;
 r4 = allStdevs;
 r5 = r2;//getting proper time scale
-r5 = get_matrix_row(histograms, displayInterval);
+//r5 = get_matrix_row(histograms, displayInterval);
 r6 = freqs;
+
+r8 = allHistMaximums;
+r9 = allHistMinimums;
+r10 = currentHistogram;
+
+maximum = mean(r8);
+minimum = mean(r9);
+amplitude = maximum - minimum;
+out(amplitude, minimum, maximum);
+allAmplitudes[currentMeasurement] = amplitude;
+r7 = allAmplitudes;
+
+currentMeasurement = currentMeasurement + 1;
