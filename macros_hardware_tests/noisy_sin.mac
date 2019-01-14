@@ -22,6 +22,10 @@ histogramThreshold = 0.5;//at which percentage (0.5 is half amplitude) histogram
 displayInterval = 10;//which measurement histogram to show, zero based
 freqStart = 29;//GHz
 freqEnd = 31;//GHz, must be more that freqStart
+variateTimeBase = false;
+minTimeBase = 0.2;
+maxTimeBase = 10;
+timeBaseStep = 0.2;
 
 
 //calculation of acquisition duration
@@ -49,6 +53,95 @@ for (ka = 0; ka < totalNumber; ka = ka + 1)
 histograms = matrix(totalNumber, histogramIntervals);//matrix to store histograms
 currentHistogram = signal(1, histogramIntervals,false);
 partialHistogram = signal(1, histogramIntervals,false);
+
+if (variateTimeBase)
+{
+	  bestTimeBase = minTimeBase;
+	  bestValue = 0;
+	  for (curBase = minTimeBase; curBase <= maxTimeBase; curBase = curBase + timeBaseStep)
+	  {
+		    set_time_base(curBase);
+		    acquire(1,x);
+
+		    r1 = x;
+		    pos = 0;
+		    
+		    maxVal = max(x,pos);
+		    minVal = min(x,pos);
+		    
+		    binsDiff = (histogramIntervals - 1)/histogramMaxDisplace/2*(maxVal - minVal);
+		    if (binsDiff < bestValue)
+		    {
+			      //even absolute limits are less than measured from histogram on other time base
+			      goto nextbase;
+		    }
+		    
+		    currentHistogram = 0;
+		    for (ia = 0; ia < N; ia=ia + 1)
+		    {
+			      binNumber = (histogramIntervals - 1)*(x[ia]+histogramMaxDisplace)/histogramMaxDisplace/2;
+			      currentHistogram[binNumber] = currentHistogram[binNumber]+1;
+		    }
+
+		    
+		    //threshold of half amplitude of historgram
+		    for (ia = 0; ia < histogramIntervals; ia = ia + 1)
+		    {
+			      if (currentHistogram[ia] < histMax*histogramThreshold)
+			      {
+					currentHistogram[ia] = 0;
+			      }
+			      else
+			      {
+				     currentHistogram[ia] = currentHistogram[ia] - histMax*histogramThreshold;   
+			      }
+		    }
+		    max1 = 0;
+		    partialHistogram = 0;
+		    for (ia = 0; ia < histogramIntervals; ia = ia + 1)
+		    {
+			      if (currentHistogram[ia] > 0)
+			      {
+					for (la = ia; la < histogramIntervals; la = la + 1)
+					{
+						  if (currentHistogram[la] == 0)
+						  {
+							    insert(currentHistogram, ia,la-1, partialHistogram, ia);
+							    maxVal = max(partialHistogram, max1);
+							    goto firstmaxfoundv;
+						  }
+					}
+			      }
+		    }
+		    firstmaxfoundv:
+		    max2 = 0;
+		    partialHistogram = 0;
+		    for (ia = histogramIntervals-1; ia >= 0; ia = ia - 1)
+		    {
+			      if (currentHistogram[ia] > 0)
+			      {
+					for (la = ia; la >= 0; la = la - 1)
+					{
+						  if (currentHistogram[la] == 0)
+						  {
+							    insert(currentHistogram, la+1,ia, partialHistogram, la+1);
+							    maxVal = max(partialHistogram, max2);
+							    goto secondmaxfoundv;
+						  }
+					}
+			      }
+		    }
+		    secondmaxfoundv:
+		    if((max2 - max1) > bestValue)
+		    {
+			      bestValue = max2 - max1;
+			      bestTimeBase = curBase;
+		    }
+		    nextbase:
+	  }
+	  
+	  set_time_base(bestTimeBase);
+}
 
 for (ka = 0; ka < totalNumber; ka = ka + 1)
 {
