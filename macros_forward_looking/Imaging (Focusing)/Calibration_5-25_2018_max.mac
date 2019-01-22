@@ -4,7 +4,10 @@ get_signals = true;
 
 
 num_of_steps = 16;
-path = "C:/Users/User1/Documents/signals.sig";
+path = "C:/Users/User1/Documents/";
+signalsFilename = path + "signals.sig";
+delaysFilename = path + "delays.sig";
+delaysTransFilename = path + "delays_trans.sig";
 transx=Signal(1,4,False);
 transy=Signal(1,4,False);
 positionx = Signal(1,16,False);
@@ -58,8 +61,8 @@ positiony[15]=-91;
 if (get_signals)
 {
 sleep(2000);
-	sig_add(path, r1);
-	sig_delete_all(path);
+	sig_add(signalsFilename, r1);
+	sig_delete_all(signalsFilename);
 
 	W=WINDOW(ch1);
 	N=count(ch1);
@@ -259,7 +262,7 @@ sleep(2000);
 
 	for (ia = 0; ia < 64; ia = ia + 1)
 	{
-		sig_add(path,get_matrix_row(mt, ia));
+		sig_add(signalsFilename,get_matrix_row(mt, ia));
 	}
 }
 else
@@ -278,7 +281,7 @@ dNc = dN/c;
 
 for (ia = 0; ia<4*num_of_steps; ia=ia+1)
 {
-	set_matrix_row(signals,ia, split(SIG_READ(path,ia),0,N/2-1));	
+	set_matrix_row(signals,ia, split(SIG_READ(signalsFilename,ia),0,N/2-1));	
 }
 
 r1 = lf(get_matrix_row(signals,0),6,10,-6);
@@ -319,9 +322,9 @@ for (ia = 0; ia<num_of_steps; ia=ia+1)
 }
 
 r15 = delays;
-sig_add("C:/Users/User1/Documents/delays.sig",delays);
-sig_delete_all("C:/Users/User1/Documents/delays.sig");
-sig_add("C:/Users/User1/Documents/delays.sig",delays);
+sig_add(delaysFilename,delays);
+sig_delete_all(delaysFilename);
+sig_add(delaysFilename,delays);
 
 for (ia = 0; ia<4; ia=ia+1)
 {
@@ -342,9 +345,9 @@ for (ia = 0; ia<4; ia=ia+1)
 
 r16 = delays2;
 
-sig_add("C:/Users/User1/Documents/delays_trans.sig",delays2);
-sig_delete_all("C:/Users/User1/Documents/delays_trans.sig");
-sig_add("C:/Users/User1/Documents/delays_trans.sig",delays2);
+sig_add(delaysTransFilename,delays2);
+sig_delete_all(delaysTransFilename);
+sig_add(delaysTransFilename,delays2);
 
 
 

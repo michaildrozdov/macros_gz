@@ -1,9 +1,10 @@
 clear_variables();
+useRGA = true;
 //Initialization
 bestMaximum = 0;
 bestxx = 0;
 bestyy = 0;
-showSignals = false;//update registers with current signals, if true
+showSignals = true;//update registers with current signals, if true
 stationaryBackground = false;//one signal is used as background
 calculateTargetSpace = true;//if false, only signals are acquired/loaded, but no other processing
 meanCoef = 0.0;//how much of accumulated background is used in next frame, 0 - means current - prev
@@ -21,6 +22,23 @@ maxVel = 1.5;//m/s
 deltaT = 2;//s expected duration between frames, will be updated
 
 thresholdValue = 200;//checked of power
+
+//Actual RGA parameters
+startingStd = 1000;//parameter, large value of standard deviation, if no initialization is present
+initFrames = 4;//parameter
+foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
+backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
+learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
+learningRateMult = 0.95;//metaparameter, how much of the learning rate it is left for next measurment
+learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
+kernelSize = 7;//parameter, how much model values should be smoothed
+//end of RGA parameters
+
+
+if (useRGA)
+{
+	thresholdValue = 5;  
+}
 pulseDuration = 2;//duration for integration, when calculating power from difference
 falloffDuration = 0.5;//duration of falloff in integration window, when calculating power from difference
 parametersNumber = 6;//when loading, omit first 6 signals, as those are parameters
@@ -125,6 +143,25 @@ stdevStep = 2*floor(N/skipSize/5/2);//when calculating variable threshold, it is
 thresholdValuesLocal = signal(1, N/skipSize, false);//array, which will be used to store variable (with point in signal) threshold
 stddevLocalCalcArray = signal(1, stdevStep, false);//array to store region of power signal for quick mean and stdev calculation
 
+meanValues = matrix(8,N);
+stdValuesArr = signal(T,N,false);
+stdValuesArr = startingStd;
+stdValues = matrix(8,N);
+masks = matrix(8,N);
+
+for (k = 0; k < 8; k = k+1)
+{
+	  set_matrix_row(meanValues, k, sig_read(saveTo,parametersNumber+k));
+	  set_matrix_row(stdValues, k, stdValuesArr);
+}
+
+
+kernel = signal(1,kernelSize,false);
+kernel = sqrt(2);
+extendedKernel = prev1;
+extendedKernel = 0;
+insert(kernel, 0, kernelSize-1,extendedKernel, 0);
+ 
 
 //if maximum angle is wide enough, drawing area width is calculated directly from that angle
 //otherwise additional width of maxDistance/3 is added to avoid drawing area as narrow strip
@@ -320,25 +357,91 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    set_matrix_row(prevSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka));
 		    set_matrix_row(currentSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka + 8));
 	  }
-	  if (stationaryBackground)
+	  
+	  ffilt1 = 4;//GHz
+	  ffilt2 = 4.5;//GHz
+	  if (useRGA)
 	  {
+		    //print_line("");
 		    for (ka = 0; ka < 8; ka = ka + 1)
+		    { 
+			      currentFrame = get_matrix_row(currentSignal, ka) - get_matrix_row(meanValues, ka);
+			      set_label(currentFrame,T,"nS","mV");
+			      currentFrame = ifft(fft(currentFrame)*fft(extendedKernel));
+			      r9 = currentFrame;
+			      //currentFrame = lf(currentFrame, ffilt1,ffilt2,-6);
+			      currentDeviations = sqrt(get_matrix_row(stdValues, ka));
+			      set_label(currentDeviations,T,"nS","mV");
+			      r14 = currentDeviations;
+			      temp = get_matrix_row(currentSignal, ka);
+			      set_label(temp, T, "ns", "mV");
+			      r15 = temp;
+			      temp = get_matrix_row(meanValues, ka);
+			      set_label(temp, T, "ns", "mV");
+			      r16 = temp;
+			      
+			      currentMask = currentDeviations;
+			      currentMask = 0;
+			      for (ia = 0; ia < N; ia = ia + 1)
+			      {
+					if (abs(currentFrame[ia]) > foregroundThreshold*currentDeviations[ia])
+					{
+						  currentMask[ia] = 1;
+					}
+					else
+					{
+						  if (abs(currentFrame[ia]) > backgroundThreshold*currentDeviations[ia])
+						  {
+							    currentMask[ia] = (abs(currentFrame[ia]) - backgroundThreshold*currentDeviations[ia])/(foregroundThreshold - backgroundThreshold)/currentDeviations[ia];
+						  }
+					}
+			      }
+
+			      currentMask = ifft(fft(currentMask)*fft(extendedKernel));
+			      currentDeviations = learningRate*(1-currentMask)*currentFrame*currentFrame + (1 - learningRate*(1-currentMask))*currentDeviations*currentDeviations;
+			      r11 = sqrt(currentDeviations);
+			      currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));
+			      set_matrix_row(meanValues, ka, learningRate*(1-currentMask)*get_matrix_row(currentSignal, ka) + (1 -  learningRate*(1-currentMask))*get_matrix_row(meanValues, ka));
+			      //set_matrix_row(meanValues, ka, learningRate*get_matrix_row(currentSignal, ka) + (1 -  learningRate)*get_matrix_row(meanValues, ka));
+			      
+			      temp = get_matrix_row(meanValues, ka);
+			      set_label(temp, T, "ns", "mV");
+			      r12 = temp;
+			      set_matrix_row(meanSignal, ka, get_matrix_row(meanValues, ka));
+			      set_matrix_row(masks, ka, currentMask);
+			      r10 = currentMask;
+			      set_matrix_row(stdValues, ka, currentDeviations);
+			      r13 = sqrt(currentDeviations);
+			      //pause();
+		    }
+		    
+		    learningRate = learningRate*learningRateMult;
+		    if (learningRate < learningRateFloor)
 		    {
-			      set_matrix_row(prevSignal, ka, w*sig_read(saveTo, parametersNumber + backAt*sigsInPeriod + ka));
+			      learningRate = learningRateFloor;
 		    }
 	  }
-	  
-	  for (ka = 0; ka < 8; ka = ka + 1)
+	  else
 	  {
-		    set_matrix_row(meanSignal, ka, (1 - meanCoef)*get_matrix_row(prevSignal,ka) + meanCoef*get_matrix_row(meanSignal,ka));
+		    if (stationaryBackground)
+		    {
+			      for (ka = 0; ka < 8; ka = ka + 1)
+			      {
+					set_matrix_row(prevSignal, ka, w*sig_read(saveTo, parametersNumber + backAt*sigsInPeriod + ka));
+			      }
+		    }
+		    
+		    for (ka = 0; ka < 8; ka = ka + 1)
+		    {
+			      set_matrix_row(meanSignal, ka, (1 - meanCoef)*get_matrix_row(prevSignal,ka) + meanCoef*get_matrix_row(meanSignal,ka));
+		    }
 	  }
 
 	  //End of Signal acquisition
 	  
 	  
 	  //Difference signal calculation
-	  ffilt1 = 4;//GHz
-	  ffilt2 = 4.5;//GHz
+	 
 	  for (point = 0; point < N - slidingWindowN; point = point + 1)
 	  {
 	    
@@ -355,12 +458,25 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  
 	  for (ka = 0; ka < 8; ka = ka + 1)
 	  {
-		    cur = get_matrix_row(currentSignal,ka);
-		    mea = get_matrix_row(meanSignal,ka);
-		    set_label(cur,T,"nS","mV");
-		    set_label(mea,T,"nS","mV");
-		    curPower = get_matrix_row(powerRaw,ka);
-		    set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6)/(push(curPower,slidingWindowN/2) + 0.5));
+		    if (useRGA)
+		    {
+			      cur = get_matrix_row(currentSignal,ka);
+			      mea = get_matrix_row(meanSignal,ka);
+			      
+			      set_label(cur,T,"nS","mV");
+			      set_label(mea,T,"nS","mV");
+
+			      set_matrix_row(differenceSignal, ka,(cur - mea)*get_matrix_row(masks, ka));
+		    }
+		    else
+		    {
+			      cur = get_matrix_row(currentSignal,ka);
+			      mea = get_matrix_row(meanSignal,ka);
+			      set_label(cur,T,"nS","mV");
+			      set_label(mea,T,"nS","mV");
+			      curPower = get_matrix_row(powerRaw,ka);
+			      set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6)/(push(curPower,slidingWindowN/2) + 0.5));
+		    }
 		    tempNormal = get_matrix_row(differenceSignal, ka);
 		    set_label(tempNormal,T,"nS","mV");
 
@@ -398,23 +514,66 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  pos = 0;
 	  if (showSignals)
 	  {
-			  r1 = get_matrix_row(currentSignal, 0) - get_matrix_row(prevSignal, 0);
-			  r2 = get_matrix_row(currentSignal, 1) - get_matrix_row(prevSignal, 1);
-			  r3 = get_matrix_row(currentSignal, 2) - get_matrix_row(prevSignal, 2);
-			  r4 = get_matrix_row(currentSignal, 3) - get_matrix_row(prevSignal, 3);
-			  r5 = get_matrix_row(currentSignal, 4) - get_matrix_row(prevSignal, 4);
-			  r6 = get_matrix_row(currentSignal, 5) - get_matrix_row(prevSignal, 5);
-			  r7 = get_matrix_row(currentSignal, 6) - get_matrix_row(prevSignal, 6);
-			  r8 = get_matrix_row(currentSignal, 7) - get_matrix_row(prevSignal, 7);
+			  //r1 = get_matrix_row(currentSignal, 0) - get_matrix_row(prevSignal, 0);
+			  //r2 = get_matrix_row(currentSignal, 1) - get_matrix_row(prevSignal, 1);
+			  //r3 = get_matrix_row(currentSignal, 2) - get_matrix_row(prevSignal, 2);
+			  //r4 = get_matrix_row(currentSignal, 3) - get_matrix_row(prevSignal, 3);
+			  //r5 = get_matrix_row(currentSignal, 4) - get_matrix_row(prevSignal, 4);
+			  //r6 = get_matrix_row(currentSignal, 5) - get_matrix_row(prevSignal, 5);
+			  //r7 = get_matrix_row(currentSignal, 6) - get_matrix_row(prevSignal, 6);
+			  //r8 = get_matrix_row(currentSignal, 7) - get_matrix_row(prevSignal, 7);
 			  
-			  r9 = get_matrix_row(powersignal, 0)/100;
-			  r10 = get_matrix_row(powersignal, 1)/100;
-			  r11 = get_matrix_row(powersignal, 2)/100;
-			  r12 = get_matrix_row(powersignal, 3)/100;
-			  r13 = get_matrix_row(powersignal, 4)/100;
-			  r14 = get_matrix_row(powersignal, 5)/100;
-			  r15 = get_matrix_row(powersignal, 6)/100;
-			  r16 = get_matrix_row(powersignal, 7)/100;
+			  temp = get_matrix_row(masks,0);
+			  set_label(temp,T,"nS","mV");
+			  r1 = temp;
+			  temp = get_matrix_row(masks,1);
+			  set_label(temp,T,"nS","mV");
+			  r2 = temp;
+			  temp = get_matrix_row(masks,2);
+			  set_label(temp,T,"nS","mV");
+			  r3 = temp;
+			  temp = get_matrix_row(masks,3);
+			  set_label(temp,T,"nS","mV");
+			  r4 = temp;
+			  temp = get_matrix_row(masks,4);
+			  set_label(temp,T,"nS","mV");
+			  r5 = temp;
+			  temp = get_matrix_row(masks,5);
+			  set_label(temp,T,"nS","mV");
+			  r6 = temp;
+			  temp = get_matrix_row(masks,6);
+			  set_label(temp,T,"nS","mV");
+			  r7 = temp;
+			  temp = get_matrix_row(masks,7);
+			  set_label(temp,T,"nS","mV");
+			  r8 = temp;
+			  
+			  temp = get_matrix_row(differenceSignal, 0);
+			  set_label(temp,T,"nS","mV");
+			  r1 = temp;
+			  
+			  temp = get_matrix_row(differenceSignal, 1);
+			  set_label(temp,T,"nS","mV");
+			  r2 = temp;
+			  temp = get_matrix_row(differenceSignal, 2);
+			  set_label(temp,T,"nS","mV");
+			  r3 = temp;
+			  temp = get_matrix_row(differenceSignal, 3);
+			  set_label(temp,T,"nS","mV");
+			  r4 = temp;
+			  temp = get_matrix_row(differenceSignal, 4);
+			  set_label(temp,T,"nS","mV");
+			  r5 = temp;
+			  temp = get_matrix_row(differenceSignal, 5);
+			  set_label(temp,T,"nS","mV");
+			  r6 = temp;
+			  temp = get_matrix_row(differenceSignal, 6);
+			  set_label(temp,T,"nS","mV");
+			  r7 = temp;
+			  temp = get_matrix_row(differenceSignal, 7);
+			  set_label(temp,T,"nS","mV");
+			  r8 = temp;
+			  set_matrix_row(meanSignal, ka, get_matrix_row(meanValues, ka));
 	  }
 
 
@@ -472,28 +631,28 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    //End of Threshold on power (if needed)
 		    tempSig = get_matrix_row(powerWithThreshold, 0)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r1 = tempSig;
+		    //r1 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 1)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r2 = tempSig;
+		    //r2 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 2)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r3 = tempSig;
+		    //r3 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 3)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r4 = tempSig;
+		    //r4 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 4)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r5 = tempSig;
+		    //r5 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 5)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r6 = tempSig;
+		    //r6 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 6)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r7 = tempSig;
+		    //r7 = tempSig;
 		    tempSig = get_matrix_row(powerWithThreshold, 7)/100;
 		    set_label(tempSig,T,"nS","mV");
-		    r8 = tempSig;
+		    //r8 = tempSig;
 		    
 		    //Finding fronts and zero padding
 		    for (ka = 0; ka < 8; ka = ka + 1)
@@ -518,14 +677,14 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    }
 		    //Finding fronts and zero padding
 
-		    //r9 = get_matrix_row(longDifference, 0)/10;
-		    //r10 = get_matrix_row(longDifference, 1)/10;
-		    //r11 = get_matrix_row(longDifference, 2)/10;
-		    //r12 = get_matrix_row(longDifference, 3)/10;
-		    //r13 = get_matrix_row(longDifference, 4)/10;
-		    //r14 = get_matrix_row(longDifference, 5)/10;
-		    //r15 = get_matrix_row(longDifference, 6)/10;
-		    //r16 = get_matrix_row(longDifference, 7)/10;
+		    //r9 = get_matrix_row(longDifference, 0);
+		    //r10 = get_matrix_row(longDifference, 1);
+		    //r11 = get_matrix_row(longDifference, 2);
+		    //r12 = get_matrix_row(longDifference, 3);
+		    //r13 = get_matrix_row(longDifference, 4);
+		    //r14 = get_matrix_row(longDifference, 5);
+		    //r15 = get_matrix_row(longDifference, 6);
+		    //r16 = get_matrix_row(longDifference, 7);
 
 		    //thresholdValue = 0.05*max(get_matrix_row(longDifference, 3), pos);
 		    //print_line("Signals displayed");
@@ -560,6 +719,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      
 			      if (thresholdReached)
 			      {
+					//print_line("Threshold reached for delay ", distance);
 					for (angle = 0; angle < anglesNum; angle = angle + 1)
 					{
 						  delayPerAntenna = d/c*N/T*8*sin((angle*angleSpaceStep-45)*pi()/180);
@@ -575,6 +735,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 								      summation = summation + tempLong[index]/10;
 							    }
 						  }
+						  //print_line("Summation ", summation);
 						  set_matrix(distanceAngleSpace, angle, distance/skipSize, get_matrix(distanceAngleSpace, angle, distance/skipSize) + summation);
 					}
 			      }
@@ -585,7 +746,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    //Building threshold array
 		    testArray = get_matrix_row(distanceAngleSpace, (anglesNum-1)/2);
 		    set_label(testArray,T,"nS","mV");
-		    r16 = testArray;
+		    //r16 = testArray;
 		    maximumValue = max(testArray, pos);
 
 		    thresholdValuesLocal = thresholdValue;
@@ -620,11 +781,12 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      }
 		    }
 		    //print_line("Signals displayed");
-		    r15 = thresholdValuesLocal;
-		    
+		    //r15 = thresholdValuesLocal;
+		    //thresholdValuesLocal = 1;
 		    //End of Building threshold array
 
 		    thresholdValue2 = mean(testArray) + 2*stdev(testArray);
+		    //thresholdValue2 = 1;
 		    sigForMean = testArray;
 		    
 		    //Searching for targets and localizing in delay-angle space
@@ -690,6 +852,9 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 								      targetsUsedAngle[targetsFound] = totalAngle/totalWeight*angleSpaceStep-50;
 								      targetsUsedMaximum[targetsFound] = absoluteMax;
 								      targetsUsedDispersion[targetsFound] = totalDisp/anglesNum*skipSize/(ind2 - ind11 + 1);
+								      //print_line("Absolute maximum ", absoluteMax);
+								      //tempDisp = targetsUsedDispersion[targetsFound];
+								      //print_line("Dispersion ", tempDisp);
 								      if (targetsUsedDispersion[targetsFound] > 20*targetsUsedMaximum[targetsFound])
 								      {
 										//only increase target count, if it is not some near constant blob
@@ -697,6 +862,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 								      }
 								      else
 								      {
+	
 										localDisp = totalDisp/totalDispWeight/anglesNum*skipSize/(ind2 - ind11 + 1);
 								      }
 								      ind11 = ind2 + skipSize;
@@ -768,7 +934,7 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      {
 					effectiveSize = floor(imageSizeX/2);
 			      }
-			      ////print_line("Effective size of target ", ia, " is ", effectiveSize);
+			      //print_line("Effective size of target ", ia, " is ", effectiveSize);
 
 			      //filling image matrix region with target
 			      for (xInd = -effectiveSize; xInd < effectiveSize; xInd = xInd + 1)
