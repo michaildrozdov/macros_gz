@@ -1,0 +1,19 @@
+//destination is r2
+
+source = r1;
+xlabel = "GHz";
+ylabel = "dB";
+startingValue = 1;
+
+w = window(source);
+n = count(source);
+step = w/n;
+
+pointsBeforeStarting = startingValue/step;
+destination = signal(w + pointsBeforeStarting*step, n + pointsBeforeStarting, false);
+destination = 0;;
+
+insert(source, 0, n-1, destination, pointsBeforeStarting);
+set_label(destination, w + pointsBeforeStarting*step, xlabel, ylabel);
+
+r2 = destination;
