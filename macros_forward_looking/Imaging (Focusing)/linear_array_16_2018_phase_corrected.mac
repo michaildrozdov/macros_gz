@@ -1,0 +1,710 @@
+clear_variables();
+threshold = 7;//detction level
+
+object_step = 40; //object space grid calculation step, mm
+range = 2000;//distance from aperture of array to test area surface, mm
+MaxX = 100.0;//number of calculation points on grid along x (left-right)
+MaxY = 100.0;//number of calculation points on grid along y (front-back)
+MaxZ = 100.0;//number of calculation points on grid along z (top-bottom)
+get_signals = true;
+measure_background = true;
+measure_object = true;
+corrected_delays = false;
+trans = 3;
+pauseDuration = 4;//how long to wait before background and before measurement,s
+
+
+
+path = "C:/data/signals.sig";
+background_path = "C:/data/linear_background.sig";
+num_of_steps = 16;
+transx=Signal(1,4,False);
+transy=Signal(1,4,False);
+positionx = Signal(1,16,False);
+positiony = Signal(1,16,False);
+
+transx[0]=743;
+transy[0]=91;
+
+transx[1]=825;
+transy[1]=-91;
+
+transx[2]=-743;
+transy[2]=-91;
+
+transx[3]=-825;
+transy[3]=91;
+
+positionx[0]=526;
+positionx[1]=608;
+positionx[2]=364;
+positionx[3]=446;
+positionx[4]=202;
+positionx[5]=284;
+positionx[6]=40;
+positionx[7]=122;
+positionx[8]=-122;
+positionx[9]=-40;
+positionx[10]=-284;
+positionx[11]=-202;
+positionx[12]=-446;
+positionx[13]=-364;
+positionx[14]=-608;
+positionx[15]=-526;
+
+positiony[0]=91;
+positiony[1]=-91;
+positiony[2]=91;
+positiony[3]=-91;
+positiony[4]=91;
+positiony[5]=-91;
+positiony[6]=91;
+positiony[7]=-91;
+positiony[8]=91;
+positiony[9]=-91;
+positiony[10]=91;
+positiony[11]=-91;
+positiony[12]=91;
+positiony[13]=-91;
+positiony[14]=91;
+positiony[15]=-91;
+
+
+if (get_signals)
+{
+	if (measure_object)
+	{
+		sig_add(path,r1);
+		sig_delete_all(path);
+	}
+	if (measure_background)
+	{
+		sig_add(background_path,r1);
+		sig_delete_all(background_path);
+	}
+
+	W=WINDOW(ch1);
+	N=count(ch1);
+	shiftp = 5*N/W;
+	out(shiftp);
+	mt = matrix(num_of_steps*4,N);
+	A=matrix(MaxY,MaxX);
+	signals = matrix(64,N/2);
+	
+	if (measure_background)
+	{
+		    sleep(pauseDuration*1000);
+		  set_trans_mask(15);
+		  set_trans_mask(14);
+		  sleep(550);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		    n1=floor(N/10);
+		    n2=N-floor(N/10);
+		    w2=back1;
+		    w2=1;
+
+		    for(i=0;i<n1;i=i+1)
+		    {
+			      w2[i]=sqr(sqr(sin(i/n1*pi()/2)));
+		    }
+
+		    upper = N - n2;
+		    for(i=0;i< upper;i=i+1)
+		    {
+			      index = n2 + i;
+			      w2[index]=sqr(sqr(sin(pi()*(upper - i)/(upper)/2)));
+		    }
+		    base01 = w2*lf(back1,4,6,-8);
+		    base02 = w2*lf(back2,4,6,-8);
+		    base03 = w2*lf(back3,4,6,-8);
+		    base04 = w2*lf(back4,4,6,-8);
+		    base05 = w2*lf(back5,4,6,-8);
+		    base06 = w2*lf(back6,4,6,-8);
+		    base07 = w2*lf(back7,4,6,-8);
+		    base08 = w2*lf(back8,4,6,-8);
+		    
+		    r11 = base01;
+
+		  set_matrix_row(mt,0,base01);
+		  set_matrix_row(mt,1,push(base01,-shiftp));
+		  set_matrix_row(mt,2,base02);
+		  set_matrix_row(mt,3,push(base02,-shiftp));
+		  set_matrix_row(mt,4,base03);
+		  set_matrix_row(mt,5,push(base03,-shiftp));
+		  set_matrix_row(mt,6,base04);
+		  set_matrix_row(mt,7,push(base04,-shiftp));
+		  set_matrix_row(mt,8,base05);
+		  set_matrix_row(mt,9,push(base05,-shiftp));
+		  set_matrix_row(mt,10,base06);
+		  set_matrix_row(mt,11,push(base06,-shiftp));
+		  set_matrix_row(mt,12,base07);
+		  set_matrix_row(mt,13,push(base07,-shiftp));
+		  set_matrix_row(mt,14,base08);
+		  set_matrix_row(mt,15,push(base08,-shiftp));
+		  
+		  set_trans_mask(15);
+		  set_trans_mask(13);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		    base11 = w2*lf(back1,4,6,-8);
+		    base12 = w2*lf(back2,4,6,-8);
+		    base13 = w2*lf(back3,4,6,-8);
+		    base14 = w2*lf(back4,4,6,-8);
+		    base15 = w2*lf(back5,4,6,-8);
+		    base16 = w2*lf(back6,4,6,-8);
+		    base17 = w2*lf(back7,4,6,-8);
+		    base18 = w2*lf(back8,4,6,-8);
+		  set_matrix_row(mt,16,base11);
+		  set_matrix_row(mt,17,push(base11,-shiftp));
+		  set_matrix_row(mt,18,base12);
+		  set_matrix_row(mt,19,push(base12,-shiftp));
+		  set_matrix_row(mt,20,base13);
+		  set_matrix_row(mt,21,push(base13,-shiftp));
+		  set_matrix_row(mt,22,base14);
+		  set_matrix_row(mt,23,push(base14,-shiftp));
+		  set_matrix_row(mt,24,base15);
+		  set_matrix_row(mt,25,push(base15,-shiftp));
+		  set_matrix_row(mt,26,base16);
+		  set_matrix_row(mt,27,push(base16,-shiftp));
+		  set_matrix_row(mt,28,base17);
+		  set_matrix_row(mt,29,push(base17,-shiftp));
+		  set_matrix_row(mt,30,base18);
+		  set_matrix_row(mt,31,push(base18,-shiftp));
+
+		  set_trans_mask(15);
+		  set_trans_mask(11);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		    base21 = w2*lf(back1,4,6,-8);
+		    base22 = w2*lf(back2,4,6,-8);
+		    base23 = w2*lf(back3,4,6,-8);
+		    base24 = w2*lf(back4,4,6,-8);
+		    base25 = w2*lf(back5,4,6,-8);
+		    base26 = w2*lf(back6,4,6,-8);
+		    base27 = w2*lf(back7,4,6,-8);
+		    base28 = w2*lf(back8,4,6,-8);
+		  set_matrix_row(mt,32,base21);
+		  set_matrix_row(mt,33,push(base21,-shiftp));
+		  set_matrix_row(mt,34,base22);
+		  set_matrix_row(mt,35,push(base22,-shiftp));
+		  set_matrix_row(mt,36,base23);
+		  set_matrix_row(mt,37,push(base23,-shiftp));
+		  set_matrix_row(mt,38,base24);
+		  set_matrix_row(mt,39,push(base24,-shiftp));
+		  set_matrix_row(mt,40,base25);
+		  set_matrix_row(mt,41,push(base25,-shiftp));
+		  set_matrix_row(mt,42,base26);
+		  set_matrix_row(mt,43,push(base26,-shiftp));
+		  set_matrix_row(mt,44,base27);
+		  set_matrix_row(mt,45,push(base27,-shiftp));
+		  set_matrix_row(mt,46,base28);
+		  set_matrix_row(mt,47,push(base28,-shiftp));
+
+		  set_trans_mask(15);
+		  set_trans_mask(7);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		    base31 = w2*lf(back1,4,6,-8);
+		    base32 = w2*lf(back2,4,6,-8);
+		    base33 = w2*lf(back3,4,6,-8);
+		    base34 = w2*lf(back4,4,6,-8);
+		    base35 = w2*lf(back5,4,6,-8);
+		    base36 = w2*lf(back6,4,6,-8);
+		    base37 = w2*lf(back7,4,6,-8);
+		    base38 = w2*lf(back8,4,6,-8);
+
+		  set_matrix_row(mt,48,base31);
+		  set_matrix_row(mt,49,push(base31,-shiftp));
+		  set_matrix_row(mt,50,base32);
+		  set_matrix_row(mt,51,push(base32,-shiftp));
+		  set_matrix_row(mt,52,base33);
+		  set_matrix_row(mt,53,push(base33,-shiftp));
+		  set_matrix_row(mt,54,base34);
+		  set_matrix_row(mt,55,push(base34,-shiftp));
+		  set_matrix_row(mt,56,base35);
+		  set_matrix_row(mt,57,push(base35,-shiftp));
+		  set_matrix_row(mt,58,base36);
+		  set_matrix_row(mt,59,push(base36,-shiftp));
+		  set_matrix_row(mt,60,base37);
+		  set_matrix_row(mt,61,push(base37,-shiftp));
+		  set_matrix_row(mt,62,base38);
+		  set_matrix_row(mt,63,push(base38,-shiftp));
+
+
+		  for (ia = 0; ia < 64; ia = ia + 1)
+		  {
+			  sig_add(background_path,get_matrix_row(mt, ia));
+		  }
+
+		  set_trans_mask(15);
+		  set_trans_mask(14);
+
+		  pause();
+		  sleep(pauseDuration*1000);
+	}
+	else
+	{
+		set_trans_mask(15);
+		set_trans_mask(14);
+		sleep(150);
+		sleep(pauseDuration*1000);
+
+	}
+
+	if (measure_object)
+	{
+		    //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		    ref1 = w2*lf(back1,4,6,-8);
+		    ref2 = w2*lf(back2,4,6,-8);
+		    ref3 = w2*lf(back3,4,6,-8);
+		    ref4 = w2*lf(back4,4,6,-8);
+		    ref5 = w2*lf(back5,4,6,-8);
+		    ref6 = w2*lf(back6,4,6,-8);
+		    ref7 = w2*lf(back7,4,6,-8);
+		    ref8 = w2*lf(back8,4,6,-8);
+		   
+		    r12 = ref1;
+		    dt = 0;
+		    //(dt)=difference2(base11,ref);
+		    //compare1 = lf(base1,maxFreq,maxFreq*1.5,-8);
+		    //compare2 = lf(ref,maxFreq,maxFreq*1.5,-8);
+		    //(dt)=difference2(compare1,compare2);
+		    (dt)=difference2(base01,ref1);
+		    dt = -dt;
+		    back1=push2(ref1,dt);
+		    
+		    (dt)=difference2(base02,ref2);
+		    dt = -dt;
+		    back2=push2(ref2,dt);
+		    
+
+		    (dt)=difference2(base03,ref3);
+		    dt = -dt;
+		    ref3=push2(ref3,dt);
+		    
+
+		    (dt)=difference2(base04,ref4);
+		    dt = -dt;
+		    ref4=push2(ref4,dt);
+		    
+
+		    (dt)=difference2(base05,ref5);
+		    dt = -dt;
+		    ref5=push2(ref5,dt);
+		    
+
+		    (dt)=difference2(base06,ref6);
+		    dt = -dt;
+		    ref6=push2(ref6,dt);
+		    
+
+		    (dt)=difference2(base07,ref7);
+		    dt = -dt;
+		    ref7=push2(ref7,dt);
+		    
+
+		    (dt)=difference2(base08,ref8);
+		    dt = -dt;
+		    ref8=push2(ref8,dt);
+		    
+		  set_matrix_row(mt,0,ref1);
+		  set_matrix_row(mt,1,push(ref1,-shiftp));
+		  set_matrix_row(mt,2,ref2);
+		  set_matrix_row(mt,3,push(ref2,-shiftp));
+		  set_matrix_row(mt,4,ref3);
+		  set_matrix_row(mt,5,push(ref3,-shiftp));
+		  set_matrix_row(mt,6,ref4);
+		  set_matrix_row(mt,7,push(ref4,-shiftp));
+		  set_matrix_row(mt,8,ref5);
+		  set_matrix_row(mt,9,push(ref5,-shiftp));
+		  set_matrix_row(mt,10,ref6);
+		  set_matrix_row(mt,11,push(ref6,-shiftp));
+		  set_matrix_row(mt,12,ref7);
+		  set_matrix_row(mt,13,push(ref7,-shiftp));
+		  set_matrix_row(mt,14,ref8);
+		  set_matrix_row(mt,15,push(ref8,-shiftp));
+		  
+		  set_trans_mask(15);
+		  set_trans_mask(13);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+		   ref1 = w2*lf(back1,4,6,-8);
+		    ref2 = w2*lf(back2,4,6,-8);
+		    ref3 = w2*lf(back3,4,6,-8);
+		    ref4 = w2*lf(back4,4,6,-8);
+		    ref5 = w2*lf(back5,4,6,-8);
+		    ref6 = w2*lf(back6,4,6,-8);
+		    ref7 = w2*lf(back7,4,6,-8);
+		    ref8 = w2*lf(back8,4,6,-8);
+		   
+		    dt = 0;
+		    (dt)=difference2(base11,ref1);
+		    dt = -dt;
+		    back1=push2(ref1,dt);
+		    
+		    (dt)=difference2(base12,ref2);
+		    dt = -dt;
+		    back2=push2(ref2,dt);
+		    
+
+		    (dt)=difference2(base13,ref3);
+		    dt = -dt;
+		    ref3=push2(ref3,dt);
+		    
+
+		    (dt)=difference2(base14,ref4);
+		    dt = -dt;
+		    ref4=push2(ref4,dt);
+		    
+
+		    (dt)=difference2(base15,ref5);
+		    dt = -dt;
+		    ref5=push2(ref5,dt);
+		    
+
+		    (dt)=difference2(base16,ref6);
+		    dt = -dt;
+		    ref6=push2(ref6,dt);
+		    
+
+		    (dt)=difference2(base17,ref7);
+		    dt = -dt;
+		    ref7=push2(ref7,dt);
+		    
+
+		    (dt)=difference2(base18,ref8);
+		    dt = -dt;
+		    ref8=push2(ref8,dt);
+		    
+		  set_matrix_row(mt,16,ref1);
+		  set_matrix_row(mt,17,push(ref1,-shiftp));
+		  set_matrix_row(mt,18,ref2);
+		  set_matrix_row(mt,19,push(ref2,-shiftp));
+		  set_matrix_row(mt,20,ref3);
+		  set_matrix_row(mt,21,push(ref3,-shiftp));
+		  set_matrix_row(mt,22,ref4);
+		  set_matrix_row(mt,23,push(ref4,-shiftp));
+		  set_matrix_row(mt,24,ref5);
+		  set_matrix_row(mt,25,push(ref5,-shiftp));
+		  set_matrix_row(mt,26,ref6);
+		  set_matrix_row(mt,27,push(ref6,-shiftp));
+		  set_matrix_row(mt,28,ref7);
+		  set_matrix_row(mt,29,push(ref7,-shiftp));
+		  set_matrix_row(mt,30,ref8);
+		  set_matrix_row(mt,31,push(ref8,-shiftp));
+
+		  set_trans_mask(15);
+		  set_trans_mask(11);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+		    ref1 = w2*lf(back1,4,6,-8);
+		    ref2 = w2*lf(back2,4,6,-8);
+		    ref3 = w2*lf(back3,4,6,-8);
+		    ref4 = w2*lf(back4,4,6,-8);
+		    ref5 = w2*lf(back5,4,6,-8);
+		    ref6 = w2*lf(back6,4,6,-8);
+		    ref7 = w2*lf(back7,4,6,-8);
+		    ref8 = w2*lf(back8,4,6,-8);
+		   
+		    dt = 0;
+		    (dt)=difference2(base21,ref1);
+		    dt = -dt;
+		    back1=push2(ref1,dt);
+		    
+		    (dt)=difference2(base22,ref2);
+		    dt = -dt;
+		    back2=push2(ref2,dt);
+		    
+
+		    (dt)=difference2(base23,ref3);
+		    dt = -dt;
+		    ref3=push2(ref3,dt);
+		    
+
+		    (dt)=difference2(base24,ref4);
+		    dt = -dt;
+		    ref4=push2(ref4,dt);
+		    
+
+		    (dt)=difference2(base25,ref5);
+		    dt = -dt;
+		    ref5=push2(ref5,dt);
+		    
+
+		    (dt)=difference2(base26,ref6);
+		    dt = -dt;
+		    ref6=push2(ref6,dt);
+		    
+
+		    (dt)=difference2(base27,ref7);
+		    dt = -dt;
+		    ref7=push2(ref7,dt);
+		    
+
+		    (dt)=difference2(base28,ref8);
+		    dt = -dt;
+		    ref8=push2(ref8,dt);
+		    
+		  set_matrix_row(mt,32,ref1);
+		  set_matrix_row(mt,33,push(ref1,-shiftp));
+		  set_matrix_row(mt,34,ref2);
+		  set_matrix_row(mt,35,push(ref2,-shiftp));
+		  set_matrix_row(mt,36,ref3);
+		  set_matrix_row(mt,37,push(ref3,-shiftp));
+		  set_matrix_row(mt,38,ref4);
+		  set_matrix_row(mt,39,push(ref4,-shiftp));
+		  set_matrix_row(mt,40,ref5);
+		  set_matrix_row(mt,41,push(ref5,-shiftp));
+		  set_matrix_row(mt,42,ref6);
+		  set_matrix_row(mt,43,push(ref6,-shiftp));
+		  set_matrix_row(mt,44,ref7);
+		  set_matrix_row(mt,45,push(ref7,-shiftp));
+		  set_matrix_row(mt,46,ref8);
+		  set_matrix_row(mt,47,push(ref8,-shiftp));
+
+		  set_trans_mask(15);
+		  set_trans_mask(7);
+		  sleep(150);
+		  //acquire(255,255);
+		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+
+		    ref1 = w2*lf(back1,4,6,-8);
+		    ref2 = w2*lf(back2,4,6,-8);
+		    ref3 = w2*lf(back3,4,6,-8);
+		    ref4 = w2*lf(back4,4,6,-8);
+		    ref5 = w2*lf(back5,4,6,-8);
+		    ref6 = w2*lf(back6,4,6,-8);
+		    ref7 = w2*lf(back7,4,6,-8);
+		    ref8 = w2*lf(back8,4,6,-8);
+		   
+		    dt = 0;
+		    (dt)=difference2(base31,ref1);
+		    dt = -dt;
+		    back1=push2(ref1,dt);
+		    
+		    (dt)=difference2(base32,ref2);
+		    dt = -dt;
+		    back2=push2(ref2,dt);
+		    
+
+		    (dt)=difference2(base33,ref3);
+		    dt = -dt;
+		    ref3=push2(ref3,dt);
+		    
+
+		    (dt)=difference2(base34,ref4);
+		    dt = -dt;
+		    ref4=push2(ref4,dt);
+		    
+
+		    (dt)=difference2(base35,ref5);
+		    dt = -dt;
+		    ref5=push2(ref5,dt);
+		    
+
+		    (dt)=difference2(base36,ref6);
+		    dt = -dt;
+		    ref6=push2(ref6,dt);
+		    
+
+		    (dt)=difference2(base37,ref7);
+		    dt = -dt;
+		    ref7=push2(ref7,dt);
+		    
+
+		    (dt)=difference2(base38,ref8);
+		    dt = -dt;
+		    ref8=push2(ref8,dt);
+		    
+		  set_matrix_row(mt,48,ref1);
+		  set_matrix_row(mt,49,push(ref1,-shiftp));
+		  set_matrix_row(mt,50,ref2);
+		  set_matrix_row(mt,51,push(ref2,-shiftp));
+		  set_matrix_row(mt,52,ref3);
+		  set_matrix_row(mt,53,push(ref3,-shiftp));
+		  set_matrix_row(mt,54,ref4);
+		  set_matrix_row(mt,55,push(ref4,-shiftp));
+		  set_matrix_row(mt,56,ref5);
+		  set_matrix_row(mt,57,push(ref5,-shiftp));
+		  set_matrix_row(mt,58,ref6);
+		  set_matrix_row(mt,59,push(ref6,-shiftp));
+		  set_matrix_row(mt,60,ref7);
+		  set_matrix_row(mt,61,push(ref7,-shiftp));
+		  set_matrix_row(mt,62,ref8);
+		  set_matrix_row(mt,63,push(ref8,-shiftp));
+
+
+		for (ia = 0; ia < 64; ia = ia + 1)
+		{
+			sig_add(path,get_matrix_row(mt, ia));
+		}
+	}
+
+	for (ia = 0; ia < 64; ia = ia + 1)
+	{
+		set_matrix_row(mt,ia, SIG_READ(path,ia) - SIG_READ(background_path,ia));
+	}
+
+}
+else
+{
+	r1=SIG_READ(path,0);
+	W=WINDOW(r1);
+	N=count(r1);
+	mt = matrix(num_of_steps*4,N);
+	A=matrix(MaxY,MaxX);
+	signals = matrix(64,N/2);
+}
+
+
+c = 300.0; 
+ 
+dN = N/W; 
+dNc = dN/c; 
+
+
+tempSignal = signal(W/2, N/2, false);
+if (corrected_delays)
+{
+	delays = signal(1,16,false);
+	delays = SIG_READ("C:/data/delays.sig",0);
+	r11 = delays;
+	delays2 = signal(1,16,false);
+	delays2 = SIG_READ("C:/data/delays_trans.sig",0);
+	r12 = delays2;
+	for (ka = 0; ka < 4; ka = ka + 1)
+	{
+		for (ia = 0; ia<num_of_steps; ia=ia+1)
+		{	
+			tempRead =SIG_READ(path,ia + ka*16) - SIG_READ(background_path,ia + ka*16);
+			insert(tempRead, 0, N/2-1, tempSignal, 0);
+			tempsp = fft(tempSignal);
+			tempsp[0] = 0;
+			tempsp[1] = 0;
+			tempsp[2] = 0;
+			tempsp[3] = 0;
+			tempSignal = ifft(tempsp);
+			set_matrix_row(signals,ia + ka*16, 2*push(tempSignal,-delays[ia]-delays2[ka]));
+			//set_matrix_row(signals,ia + ka*16, 2*lf(push(tempSignal,-delays[ia]-delays2[ka]),maxFreq,maxFreq*1.5,-6));
+
+		}
+	}
+}
+else
+{
+	for (ia = 0; ia<4*num_of_steps; ia=ia+1)
+	{	
+		    tempRead = SIG_READ(path,ia) - SIG_READ(background_path,ia);
+		    insert(tempRead, 0, N/2-1, tempSignal, 0);
+		    tempsp = fft(tempSignal);
+		    tempsp[0] = 0;
+		    tempsp[1] = 0;
+		    tempsp[2] = 0;
+		    tempsp[3] = 0;
+		    tempSignal = ifft(tempsp);
+		    //set_matrix_row(signals,ia, 2*lf(tempSignal,maxFreq,maxFreq*1.5,-6));
+		    set_matrix_row(signals,ia, 2*tempSignal);
+	}
+}
+
+
+r1=get_matrix_row(signals,0 + 16*trans);
+r2=get_matrix_row(signals,1+ 16*trans);
+r3=get_matrix_row(signals,2+ 16*trans);
+r4=get_matrix_row(signals,3+ 16*trans);
+r5=get_matrix_row(signals,4+ 16*trans);
+r6=get_matrix_row(signals,5+ 16*trans);
+r7=get_matrix_row(signals,6+ 16*trans);
+r8=get_matrix_row(signals,7+ 16*trans);
+r9=get_matrix_row(signals,8+ 16*trans);
+r10=get_matrix_row(signals,9+ 16*trans);
+
+
+
+kirchhoff_migration(signals,A,positionx,positiony,transx,transy,W/2,object_step,range);
+ 
+pos=0;
+m=signal(1,MaxY,false);
+m2=signal(1,MaxY,false);
+for(k=0; k<MaxY;k=k+1)
+{
+	m[k]=max(get_matrix_row(A,k),pos);
+	m2[k]=min(get_matrix_row(A,k),pos);
+}
+r15 = m;
+mm=max(m,pos);
+out(mm);
+r16 = get_matrix_row(A,pos);
+r16count = count(r16);
+temp = signal(1, r16count, false);
+
+
+for (ia = 0; ia < r16cont; ia = ia + 1)
+{
+	  temp[ia] = r16[ia];
+}
+r16 = temp;
+bla = max(r16,pos);
+x = -object_step*MaxX/2 + object_step*pos;
+if (bla > threshold)
+{
+	  out(x);
+}
+mm = max(r16,pos);
+for(k=0; k<MaxY;k=k+1)
+{
+	tempy = get_matrix_row(A,k);
+	m[k]=tempy[pos];
+}
+
+mm = max(m,pos);
+
+zdir = signal(1,MaxZ,false);
+rsign = signal(1,MaxZ, false);
+
+
+z = range -object_step*MaxZ/2 ;
+y = object_step*MaxY/2 - object_step*pos;
+if (bla > threshold)
+{
+	  out(y);
+}
+
+//zdir = range_search(x,y,MaxZ,signals, positionx, positiony, transx, transy, W/2,object_step,range);
+
+//r14 = zdir;
+r13 = rsign;
+
+
+
+for(k=0; k<MaxY;k=k+1)
+{
+	for(i=0; i<MaxX;i=i+1)
+	{
+		x=get_matrix(A,k,i) ;
+		x = x - threshold;
+		if (x < 0)
+		{
+			x = 0;
+		}
+		set_matrix(A,k,i,x);
+
+	}
+}
+
+
+draw(A);
+
+draw_axis( -MaxX*object_step/2, object_step,MaxX/10, -MaxY*object_step/2, object_step, MaxY/10);
