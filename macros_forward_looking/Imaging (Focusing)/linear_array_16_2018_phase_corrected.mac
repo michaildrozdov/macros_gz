@@ -1,6 +1,6 @@
 clear_variables();
 threshold = 7;//detction level
-reps = 3;
+reps = 3;//how many measurements per switch ther will be
 
 
 object_step = 40; //object space grid calculation step, mm
@@ -279,14 +279,14 @@ if (get_signals)
 	if (measure_object)
 	{
 		    diffs = matrix(64, N);
-		    bestMean1 = 1000;
-		    bestMean2 = 1000;
-		    bestMean3 = 1000;
-		    bestMean4 = 1000;
-		    bestMean5 = 1000;
-		    bestMean6 = 1000;
-		    bestMean7 = 1000;
-		    bestMean8 = 1000;
+		    bestStdev1 = 1000;
+		    bestStdev2 = 1000;
+		    bestStdev3 = 1000;
+		    bestStdev4 = 1000;
+		    bestStdev5 = 1000;
+		    bestStdev6 = 1000;
+		    bestStdev7 = 1000;
+		    bestStdev8 = 1000;
 			      
 		    bestSignal1 = back1;
 		    bestSignal2 = back2;
@@ -318,10 +318,10 @@ if (get_signals)
 					(dt)=difference2(base1,ref1);
 					dt = -dt;
 					ref1=push2(ref1,dt);
-					meanVal = mean(ref1 - base1);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref1 - base1);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean1 = meanVal;
+						  bestStdev1 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -329,10 +329,10 @@ if (get_signals)
 					(dt)=difference2(base2,ref2);
 					dt = -dt;
 					ref2=push2(ref2,dt);
-					meanVal = mean(ref2 - base2);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref2 - base2);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean2 = meanVal;
+						  bestStdev2 = stdevVal;
 						  bestSignal2 = ref2;
 					}
 					
@@ -340,10 +340,10 @@ if (get_signals)
 					(dt)=difference2(base3,ref3);
 					dt = -dt;
 					ref3=push2(ref3,dt);
-					meanVal = mean(ref3 - base3);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref3 - base3);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean3 = meanVal;
+						  bestStdev3 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -351,10 +351,10 @@ if (get_signals)
 					(dt)=difference2(base4,ref4);
 					dt = -dt;
 					ref4=push2(ref4,dt);
-					meanVal = mean(ref4 - base4);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref4 - base4);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean4 = meanVal;
+						  bestStdev4 = stdevVal;
 						  bestSignal4 = ref1;
 					}
 					
@@ -362,10 +362,10 @@ if (get_signals)
 					(dt)=difference2(base5,ref5);
 					dt = -dt;
 					ref5=push2(ref5,dt);
-					meanVal = mean(ref5 - base5);
-					if (abs(meanVal) < abs(bestMean5))
+					stdevVal = stdev(ref5 - base5);
+					if (abs(stdevVal) < abs(bestStdev5))
 					{
-						  bestMean5 = meanVal;
+						  bestStdev5 = stdevVal;
 						  bestSignal5 = ref5;
 					}
 					
@@ -373,10 +373,10 @@ if (get_signals)
 					(dt)=difference2(base6,ref6);
 					dt = -dt;
 					ref6=push2(ref6,dt);
-					meanVal = mean(ref6 - base6);
-					if (abs(meanVal) < abs(bestMean6))
+					stdevVal = stdev(ref6 - base6);
+					if (abs(stdevVal) < abs(bestStdev6))
 					{
-						  bestMean6 = meanVal;
+						  bestStdev6 = stdevVal;
 						  bestSignal6 = ref6;
 					}
 					
@@ -384,10 +384,10 @@ if (get_signals)
 					(dt)=difference2(base7,ref7);
 					dt = -dt;
 					ref7=push2(ref7,dt);
-					meanVal = mean(ref7 - base7);
-					if (abs(meanVal) < abs(bestMean7))
+					stdevVal = stdev(ref7 - base7);
+					if (abs(stdevVal) < abs(bestStdev7))
 					{
-						  bestMean7 = meanVal;
+						  bestStdev7 = stdevVal;
 						  bestSignal7 = ref7;
 					}
 					
@@ -395,10 +395,10 @@ if (get_signals)
 					(dt)=difference2(base8,ref8);
 					dt = -dt;
 					ref8=push2(ref8,dt);
-					meanVal = mean(ref8 - base8);
-					if (abs(meanVal) < abs(bestMean8))
+					stdevVal = stdev(ref8 - base8);
+					if (abs(stdevVal) < abs(bestStdev8))
 					{
-						  bestMean8 = meanVal;
+						  bestStdev8 = stdevVal;
 						  bestSignal8 = ref8;
 					} 
 			    }
@@ -425,14 +425,14 @@ if (get_signals)
 		  set_trans_mask(13);
 		  sleep(150);
 		  
-		  bestMean1 = 1000;
-		    bestMean2 = 1000;
-		    bestMean3 = 1000;
-		    bestMean4 = 1000;
-		    bestMean5 = 1000;
-		    bestMean6 = 1000;
-		    bestMean7 = 1000;
-		    bestMean8 = 1000;
+		  bestStdev1 = 1000;
+		    bestStdev2 = 1000;
+		    bestStdev3 = 1000;
+		    bestStdev4 = 1000;
+		    bestStdev5 = 1000;
+		    bestStdev6 = 1000;
+		    bestStdev7 = 1000;
+		    bestStdev8 = 1000;
 			      
 		    bestSignal1 = back1;
 		    bestSignal2 = back2;
@@ -463,10 +463,10 @@ if (get_signals)
 					(dt)=difference2(base1,ref1);
 					dt = -dt;
 					ref1=push2(ref1,dt);
-					meanVal = mean(ref1 - base1);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref1 - base1);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean1 = meanVal;
+						  bestStdev1 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -474,10 +474,10 @@ if (get_signals)
 					(dt)=difference2(base2,ref2);
 					dt = -dt;
 					ref2=push2(ref2,dt);
-					meanVal = mean(ref2 - base2);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref2 - base2);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean2 = meanVal;
+						  bestStdev2 = stdevVal;
 						  bestSignal2 = ref2;
 					}
 					
@@ -485,10 +485,10 @@ if (get_signals)
 					(dt)=difference2(base3,ref3);
 					dt = -dt;
 					ref3=push2(ref3,dt);
-					meanVal = mean(ref3 - base3);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref3 - base3);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean3 = meanVal;
+						  bestStdev3 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -496,10 +496,10 @@ if (get_signals)
 					(dt)=difference2(base4,ref4);
 					dt = -dt;
 					ref4=push2(ref4,dt);
-					meanVal = mean(ref4 - base4);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref4 - base4);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean4 = meanVal;
+						  bestStdev4 = stdevVal;
 						  bestSignal4 = ref1;
 					}
 					
@@ -507,10 +507,10 @@ if (get_signals)
 					(dt)=difference2(base5,ref5);
 					dt = -dt;
 					ref5=push2(ref5,dt);
-					meanVal = mean(ref5 - base5);
-					if (abs(meanVal) < abs(bestMean5))
+					stdevVal = stdev(ref5 - base5);
+					if (abs(stdevVal) < abs(bestStdev5))
 					{
-						  bestMean5 = meanVal;
+						  bestStdev5 = stdevVal;
 						  bestSignal5 = ref5;
 					}
 					
@@ -518,10 +518,10 @@ if (get_signals)
 					(dt)=difference2(base6,ref6);
 					dt = -dt;
 					ref6=push2(ref6,dt);
-					meanVal = mean(ref6 - base6);
-					if (abs(meanVal) < abs(bestMean6))
+					stdevVal = stdev(ref6 - base6);
+					if (abs(stdevVal) < abs(bestStdev6))
 					{
-						  bestMean6 = meanVal;
+						  bestStdev6 = stdevVal;
 						  bestSignal6 = ref6;
 					}
 					
@@ -529,10 +529,10 @@ if (get_signals)
 					(dt)=difference2(base7,ref7);
 					dt = -dt;
 					ref7=push2(ref7,dt);
-					meanVal = mean(ref7 - base7);
-					if (abs(meanVal) < abs(bestMean7))
+					stdevVal = stdev(ref7 - base7);
+					if (abs(stdevVal) < abs(bestStdev7))
 					{
-						  bestMean7 = meanVal;
+						  bestStdev7 = stdevVal;
 						  bestSignal7 = ref7;
 					}
 					
@@ -540,10 +540,10 @@ if (get_signals)
 					(dt)=difference2(base8,ref8);
 					dt = -dt;
 					ref8=push2(ref8,dt);
-					meanVal = mean(ref8 - base8);
-					if (abs(meanVal) < abs(bestMean8))
+					stdevVal = stdev(ref8 - base8);
+					if (abs(stdevVal) < abs(bestStdev8))
 					{
-						  bestMean8 = meanVal;
+						  bestStdev8 = stdevVal;
 						  bestSignal8 = ref8;
 					} 
 			    }
@@ -570,14 +570,14 @@ if (get_signals)
 		  set_trans_mask(11);
 		  sleep(150);
 
-		  bestMean1 = 1000;
-		    bestMean2 = 1000;
-		    bestMean3 = 1000;
-		    bestMean4 = 1000;
-		    bestMean5 = 1000;
-		    bestMean6 = 1000;
-		    bestMean7 = 1000;
-		    bestMean8 = 1000;
+		  bestStdev1 = 1000;
+		    bestStdev2 = 1000;
+		    bestStdev3 = 1000;
+		    bestStdev4 = 1000;
+		    bestStdev5 = 1000;
+		    bestStdev6 = 1000;
+		    bestStdev7 = 1000;
+		    bestStdev8 = 1000;
 			      
 		    bestSignal1 = back1;
 		    bestSignal2 = back2;
@@ -608,10 +608,10 @@ if (get_signals)
 					(dt)=difference2(base1,ref1);
 					dt = -dt;
 					ref1=push2(ref1,dt);
-					meanVal = mean(ref1 - base1);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref1 - base1);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean1 = meanVal;
+						  bestStdev1 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -619,10 +619,10 @@ if (get_signals)
 					(dt)=difference2(base2,ref2);
 					dt = -dt;
 					ref2=push2(ref2,dt);
-					meanVal = mean(ref2 - base2);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref2 - base2);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean2 = meanVal;
+						  bestStdev2 = stdevVal;
 						  bestSignal2 = ref2;
 					}
 					
@@ -630,10 +630,10 @@ if (get_signals)
 					(dt)=difference2(base3,ref3);
 					dt = -dt;
 					ref3=push2(ref3,dt);
-					meanVal = mean(ref3 - base3);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref3 - base3);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean3 = meanVal;
+						  bestStdev3 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -641,10 +641,10 @@ if (get_signals)
 					(dt)=difference2(base4,ref4);
 					dt = -dt;
 					ref4=push2(ref4,dt);
-					meanVal = mean(ref4 - base4);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref4 - base4);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean4 = meanVal;
+						  bestStdev4 = stdevVal;
 						  bestSignal4 = ref1;
 					}
 					
@@ -652,10 +652,10 @@ if (get_signals)
 					(dt)=difference2(base5,ref5);
 					dt = -dt;
 					ref5=push2(ref5,dt);
-					meanVal = mean(ref5 - base5);
-					if (abs(meanVal) < abs(bestMean5))
+					stdevVal = stdev(ref5 - base5);
+					if (abs(stdevVal) < abs(bestStdev5))
 					{
-						  bestMean5 = meanVal;
+						  bestStdev5 = stdevVal;
 						  bestSignal5 = ref5;
 					}
 					
@@ -663,10 +663,10 @@ if (get_signals)
 					(dt)=difference2(base6,ref6);
 					dt = -dt;
 					ref6=push2(ref6,dt);
-					meanVal = mean(ref6 - base6);
-					if (abs(meanVal) < abs(bestMean6))
+					stdevVal = stdev(ref6 - base6);
+					if (abs(stdevVal) < abs(bestStdev6))
 					{
-						  bestMean6 = meanVal;
+						  bestStdev6 = stdevVal;
 						  bestSignal6 = ref6;
 					}
 					
@@ -674,10 +674,10 @@ if (get_signals)
 					(dt)=difference2(base7,ref7);
 					dt = -dt;
 					ref7=push2(ref7,dt);
-					meanVal = mean(ref7 - base7);
-					if (abs(meanVal) < abs(bestMean7))
+					stdevVal = stdev(ref7 - base7);
+					if (abs(stdevVal) < abs(bestStdev7))
 					{
-						  bestMean7 = meanVal;
+						  bestStdev7 = stdevVal;
 						  bestSignal7 = ref7;
 					}
 					
@@ -685,10 +685,10 @@ if (get_signals)
 					(dt)=difference2(base8,ref8);
 					dt = -dt;
 					ref8=push2(ref8,dt);
-					meanVal = mean(ref8 - base8);
-					if (abs(meanVal) < abs(bestMean8))
+					stdevVal = stdev(ref8 - base8);
+					if (abs(stdevVal) < abs(bestStdev8))
 					{
-						  bestMean8 = meanVal;
+						  bestStdev8 = stdevVal;
 						  bestSignal8 = ref8;
 					} 
 			    }
@@ -715,14 +715,14 @@ if (get_signals)
 		  set_trans_mask(7);
 		  sleep(150);
 
-		  bestMean1 = 1000;
-		    bestMean2 = 1000;
-		    bestMean3 = 1000;
-		    bestMean4 = 1000;
-		    bestMean5 = 1000;
-		    bestMean6 = 1000;
-		    bestMean7 = 1000;
-		    bestMean8 = 1000;
+		  bestStdev1 = 1000;
+		    bestStdev2 = 1000;
+		    bestStdev3 = 1000;
+		    bestStdev4 = 1000;
+		    bestStdev5 = 1000;
+		    bestStdev6 = 1000;
+		    bestStdev7 = 1000;
+		    bestStdev8 = 1000;
 			      
 		    bestSignal1 = back1;
 		    bestSignal2 = back2;
@@ -753,10 +753,10 @@ if (get_signals)
 					(dt)=difference2(base1,ref1);
 					dt = -dt;
 					ref1=push2(ref1,dt);
-					meanVal = mean(ref1 - base1);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref1 - base1);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean1 = meanVal;
+						  bestStdev1 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -764,10 +764,10 @@ if (get_signals)
 					(dt)=difference2(base2,ref2);
 					dt = -dt;
 					ref2=push2(ref2,dt);
-					meanVal = mean(ref2 - base2);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref2 - base2);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean2 = meanVal;
+						  bestStdev2 = stdevVal;
 						  bestSignal2 = ref2;
 					}
 					
@@ -775,10 +775,10 @@ if (get_signals)
 					(dt)=difference2(base3,ref3);
 					dt = -dt;
 					ref3=push2(ref3,dt);
-					meanVal = mean(ref3 - base3);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref3 - base3);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean3 = meanVal;
+						  bestStdev3 = stdevVal;
 						  bestSignal1 = ref1;
 					}
 					
@@ -786,10 +786,10 @@ if (get_signals)
 					(dt)=difference2(base4,ref4);
 					dt = -dt;
 					ref4=push2(ref4,dt);
-					meanVal = mean(ref4 - base4);
-					if (abs(meanVal) < abs(bestMean1))
+					stdevVal = stdev(ref4 - base4);
+					if (abs(stdevVal) < abs(bestStdev1))
 					{
-						  bestMean4 = meanVal;
+						  bestStdev4 = stdevVal;
 						  bestSignal4 = ref1;
 					}
 					
@@ -797,10 +797,10 @@ if (get_signals)
 					(dt)=difference2(base5,ref5);
 					dt = -dt;
 					ref5=push2(ref5,dt);
-					meanVal = mean(ref5 - base5);
-					if (abs(meanVal) < abs(bestMean5))
+					stdevVal = stdev(ref5 - base5);
+					if (abs(stdevVal) < abs(bestStdev5))
 					{
-						  bestMean5 = meanVal;
+						  bestStdev5 = stdevVal;
 						  bestSignal5 = ref5;
 					}
 					
@@ -808,10 +808,10 @@ if (get_signals)
 					(dt)=difference2(base6,ref6);
 					dt = -dt;
 					ref6=push2(ref6,dt);
-					meanVal = mean(ref6 - base6);
-					if (abs(meanVal) < abs(bestMean6))
+					stdevVal = stdev(ref6 - base6);
+					if (abs(stdevVal) < abs(bestStdev6))
 					{
-						  bestMean6 = meanVal;
+						  bestStdev6 = stdevVal;
 						  bestSignal6 = ref6;
 					}
 					
@@ -819,10 +819,10 @@ if (get_signals)
 					(dt)=difference2(base7,ref7);
 					dt = -dt;
 					ref7=push2(ref7,dt);
-					meanVal = mean(ref7 - base7);
-					if (abs(meanVal) < abs(bestMean7))
+					stdevVal = stdev(ref7 - base7);
+					if (abs(stdevVal) < abs(bestStdev7))
 					{
-						  bestMean7 = meanVal;
+						  bestStdev7 = stdevVal;
 						  bestSignal7 = ref7;
 					}
 					
@@ -830,10 +830,10 @@ if (get_signals)
 					(dt)=difference2(base8,ref8);
 					dt = -dt;
 					ref8=push2(ref8,dt);
-					meanVal = mean(ref8 - base8);
-					if (abs(meanVal) < abs(bestMean8))
+					stdevVal = stdev(ref8 - base8);
+					if (abs(stdevVal) < abs(bestStdev8))
 					{
-						  bestMean8 = meanVal;
+						  bestStdev8 = stdevVal;
 						  bestSignal8 = ref8;
 					} 
 			    }
