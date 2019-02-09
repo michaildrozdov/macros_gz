@@ -1,0 +1,1120 @@
+clear_variables();
+clearTrace = 1;
+sleep(5000);
+oldAlgorithm = false;
+m = 128;
+numOfMeasurements = 20000;
+positionAveraging = 6;
+pulseDuration = 2.5;
+falloffDuration = 0.5;
+backAveragings = 4;
+d = 0.25;
+c = 0.3;//m/ns
+threshold = 1.5;
+movementThreshold = 50;
+movementWaitCycles = 5;
+currentWaitCycles = 0;
+breatheThreshold = 2;
+
+saveTo = "C:\data\interface_test_compare4.sig";
+saveFile = 0;
+fromFile = 1;
+
+//signaturePath = "C:\tracing2015\data\human_signature_abs.sig";
+//signatureSig = sig_read(signaturePath,0);
+
+
+empty = signal(30,2048,false);
+empty = 0;
+
+if (fromFile)
+{
+	  b = sig_read(saveTo,0);
+}
+else
+{
+	  //b = ch2;
+	  b = signal(30,512, false);//signal acauired
+	  if (saveFile > 0)
+	  {
+		    sig_add(saveTo, b);
+		    sig_delete_all(saveTo);
+	  }
+}
+
+N = count(b);
+T = window(b);
+
+signatureSignal = b;
+
+detectionsPositive = signal(1, positionAveraging, false);
+detectionsSignal = signal(1, positionAveraging, false);
+weights1 = signal(1, positionAveraging, false);
+weights2 = signal(1, positionAveraging, false);
+xes = signal(1, positionAveraging, false);
+yes = signal(1, positionAveraging, false);
+signalsMemory1 = matrix(positionAveraging, 512);
+signalsMemory2 = matrix(positionAveraging, 512);
+
+powerSignal1 = b;
+powerSignal2 = b;
+
+pointsPerNs = N/T;
+nsPerPoint = T/N;
+
+A=matrix(m,2048);
+Asub=matrix(m,2048);
+A2=matrix(m,2048);
+Asub2=matrix(m,2048);
+
+maxDisplace = 4;
+divisionStep = 50;
+pointsPerMeter = 50;
+
+ant_num = 12;
+ant_pos = signal(10,ant_num,false);
+ant_pos[0] = 0;
+ant_pos[1] = 10;
+ant_pos[2] = 10;
+ant_pos[3] = 10;
+ant_pos[4] = 10;
+ant_pos[5] = 10;
+ant_pos[6] = 10;
+ant_pos[7] = 10;
+ant_pos[8] = 10;
+ant_pos[9] = 10;
+ant_pos[10] = 10;
+ant_pos[11] = 10;
+
+if (clearTrace == 1)
+{
+	xyclear();
+}
+
+windStarts = signal(1,5,false);//in meters
+windStarts[0] = 0;
+windStarts[1] = 2;
+windStarts[2] = 5;
+windStarts[3] = 10;
+windStarts[4] = 15;
+currentStart = 1;
+
+
+windSizes = signal(1,4,false);//in meters
+windSizes[0] = 2;
+windSizes[1] = 5;
+windSizes[2] = 10;
+windSizes[3] = 20;
+currentSize = 1;
+
+delayAtZero = 24;//where actual zero coordinate is
+preciseDelay = windStarts[currentStart]/(c/2)+delayAtZero;//delay until required start
+newCoarseDelay = 8*floor(preciseDelay/8);//coarseDelay, which can be set by device
+leftDelay = preciseDelay - newCoarseDelay;//always posityve
+coordStart = windStarts[currentStart];
+requiredWindowSize = windSizes[currentSize];
+currentTimeWindow = requiredWindowSize/(c/2) + leftDelay;
+coordStep = requiredWindowSize/4;
+windowSize = currentTimeWindow;
+
+
+set_acquire_points(512);
+set_averaging(1,64);
+set_coarse_delay(newCoarseDelay);
+set_time_base(currentTimeWindow/10);
+
+print_line("number of points set to 512");
+print_line("averaging set to 64");
+print_line("coarse delay set to ", newCoarseDelay);
+print_line("window set to ", currentTimeWindow);
+
+
+rangeStart = coordStart;
+if (rangeStart < 0)
+{
+	  rangeStart = 0;
+}
+rangeEnd =  rangeStart + requiredWindowSize;
+radius = 10;
+//xyinit(100,-500,100,1000,ant_pos,10,radius);
+xyinit(100*rangeStart,100*rangeEnd,100,1000,ant_pos,10,radius);
+//xyinit(1000,-maxDisplace*100,maxDisplace*100,1000,ant_pos,divisionStep,radius);
+xyaddlines(10,0,40,150,80,0,100,150);
+
+xysetwarning(0);
+xysetmode(0);
+
+
+out(rangeStart);
+out(rangeEnd);
+
+xysetradarcaption(0,100*rangeStart);
+xysetradarcaption(1,100*(rangeStart + coordStep));
+xysetradarcaption(2,100*(rangeStart + 2*coordStep));
+xysetradarcaption(3,100*(rangeStart + 3*coordStep));
+xysetradarcaption(4,100*(rangeStart + 4*coordStep));
+
+constPush = 0.0;
+constPushInPoints = -constPush*pointsPerNs;
+//xyinit(-maxDisplace*100,0,maxDisplace*100,5*100,antennasToDisplay,divisionStep,10);
+
+
+slidingWindowN = ceil(pulseDuration*pointsPerNs);
+slidingWindow = signal(pulseDuration, slidingWindowN, false);
+meanSig = slidingWindow;
+
+start1point = 0;
+start2point = floor(falloffDuration*slidingWindowN/pulseDuration);
+end1point = floor((pulseDuration - falloffDuration)*slidingWindowN/pulseDuration);
+end2point = slidingWindowN-1;
+
+slidingWindow = 0;
+for (ia = start1point; ia < start2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(-pi()/2 + pi() *(ia - start1point)/(start2point - start1point)))/2;
+}
+for (ia = start2point; ia < end1point; ia = ia + 1)
+{
+	  slidingWindow[ia] = 1;
+}
+for (ia = end1point; ia < end2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - end1point)/(end2point - end1point)))/2;
+}
+
+signalPart = signal(pulseDuration,slidingWindowN,false);
+
+//r7 = b;
+//r8 = b;
+
+tracking = true;
+running = true;
+displace = 0;
+
+xysetmode(2);
+firstTime = true;
+warnings = signal(1,5,false);
+warnings = 0;
+counter = 0;
+
+detectionsPositive = 0;
+detectionsSignal = 0;
+weights1 = 0;
+weights2 = 0;
+xes = 0;
+yes = 0;
+detectionsTried = 0;
+signalsMemory1 = 0;
+signalsMemory2 = 0;
+zeros = signal(T,N,false);
+zeros = 0;
+
+while(running)
+{
+	  //main loop
+	  bs  = xygetbuttonstates();
+	  if (firstTime)
+	  {
+		    firstTime = false;
+		    bs[3] = 1;
+	  }
+	  if(bs[0] !=0)
+	  {
+		    //finished running
+		    print_line("button 1 pressed");
+		    xysetmode(0);
+		    xysetwarning(0);
+		   running = false;
+	  }
+	  if(bs[1] !=0)
+	  {
+		    //cycle through possible window starts
+		   //print_line("button 2 pressed");
+		   currentStart = currentStart + 1;
+		   if (currentStart > 4)
+		   {
+			      currentStart = 0;
+		   }
+		   
+		   //set_acquire_points(512);
+		   //set_averaging(1,64);
+		   print_line("number of points set to 512");
+		    print_line("averaging set to 64");
+		   
+		  preciseDelay = windStarts[currentStart]/(c/2)+delayAtZero;//delay until required start
+		    newCoarseDelay = 8*floor(preciseDelay/8);//coarseDelay, which can be set by device
+		    leftDelay = preciseDelay - newCoarseDelay;//always posityve
+		    coordStart = windStarts[currentStart];
+		    requiredWindowSize = windSizes[currentSize];
+		    currentTimeWindow = requiredWindowSize/(c/2) + leftDelay;
+		    coordStep = requiredWindowSize/4;
+		    windowSize = currentTimeWindow;
+		   set_coarse_delay(newCoarseDelay);
+		   set_time_base(currentTimeWindow/10);
+		   print_line("coarse delay set to ", newCoarseDelay);
+		   
+		   rangeStart = coordStart;
+		   if (rangeStart < 0)
+		   {
+			      rangeStart = 0;
+		   }
+		    rangeEnd =  rangeStart + requiredWindowSize;
+		    out(rangeStart, rangeEnd);
+		    xyinit(100*rangeStart,100*rangeEnd,100,1000,ant_pos,10,radius);
+
+		    xysetradarcaption(0,100*rangeStart);
+		    xysetradarcaption(1,100*(rangeStart + coordStep));
+		    xysetradarcaption(2,100*(rangeStart + 2*coordStep));
+		    xysetradarcaption(3,100*(rangeStart + 3*coordStep));
+		    xysetradarcaption(4,100*(rangeStart + 4*coordStep));
+
+
+	  }
+	  if(bs[2] !=0)
+	  {
+		    //cycle through possible window sizes
+		   //print_line("button 3 pressed");
+		   currentSize = currentSize + 1;
+		   if (currentSize > 3)
+		   {
+			      currentSize = 0;
+		   }
+		   
+		   preciseDelay = windStarts[currentStart]/(c/2)+delayAtZero;//delay until required start
+		    newCoarseDelay = 8*floor(preciseDelay/8);//coarseDelay, which can be set by device
+		    leftDelay = preciseDelay - newCoarseDelay;//always posityve
+		    coordStart = windStarts[currentStart];
+		    requiredWindowSize = windSizes[currentSize];
+		    currentTimeWindow = requiredWindowSize/(c/2) + leftDelay;
+		    coordStep = requiredWindowSize/4;
+		    windowSize = currentTimeWindow;
+		   set_coarse_delay(newCoarseDelay);
+		   set_time_base(currentTimeWindow/10);
+		   print_line("coarse delay set to ", newCoarseDelay);
+		   
+		   rangeStart = coordStart;
+		   if (rangeStart < 0)
+		   {
+			      rangeStart = 0;
+		   }
+		    rangeEnd =  rangeStart + requiredWindowSize;
+		    xyinit(100*rangeStart,100*rangeEnd,100,1000,ant_pos,10,radius);
+
+		    xysetradarcaption(0,100*rangeStart);
+		    xysetradarcaption(1,100*(rangeStart + coordStep));
+		    xysetradarcaption(2,100*(rangeStart + 2*coordStep));
+		    xysetradarcaption(3,100*(rangeStart + 3*coordStep));
+		    xysetradarcaption(4,100*(rangeStart + 4*coordStep));
+	  }
+	  if(bs[3] !=0)
+	  {
+		    //calibration and checks
+		   print_line("Calibration in process");
+		   
+		   currentCoarseDelay = get_coarse_delay();
+		   currentTimeBase = get_time_base();
+		   set_coarse_delay(0);
+		   set_time_base(2);
+		   set_acquire_points(512);
+		   set_averaging(1,32);
+		   tracking = true;
+		   
+		   xysetmode(1);
+		   avgRms = 0;
+		   avgRms2 = 0;
+
+		    for (ia = 0; ia < 3; ia = ia + 1)
+		    {
+			      acquire(1, temp1, 2, temp2);
+			      avgRms = avgRms + stdev(temp1);
+			      avgRms2 = avgRms2 + stdev(temp2);
+			      sleep(500);
+		    }
+
+		    avgRms = avgRms/3*sqrt(32);
+		    avgRms2 = avgRms2/3*sqrt(32);
+		    if ((avgRms > 4) OR (avgRms2 > 4))
+		    {
+			      print_line("average rms on ch1 ", avgRms);
+			      print_line("average rms on ch2 ", avgRms2);
+			      warnings[0] = 1;
+			      xysetwarning(1);
+		    }
+		    else
+		    {
+				warnings = 0;
+				xysetwarning(0);
+		    }
+		    
+		    out(avgRms, avgRms2);
+		    
+		    set_averaging(1,64);
+		    xysetmode(2);
+		    set_coarse_delay(currentCoarseDelay);
+		    set_time_base(currentTimeBase/1000);
+	  }
+	  
+	  
+	  
+	   if (tracking)
+	  {
+		    //timeBefore = time();
+		    //print_line("in tracking");
+		    sleep(100);
+		    detections = 0;
+		    averageX = 0;
+		    averageY = 0;
+		    if (detectionsTried == 0)
+		    {
+			      if (fromFile)
+			      {
+					first1 = sig_read(saveTo,displace);
+					displace = displace + 1;
+					first2 = sig_read(saveTo,displace);
+					displace = displace + 1;
+			      }
+			      else
+			      {
+					acquire(1, first1, 2, first2);
+					//first1 = signal(currentTimeWindow, 512, false);
+					//first2 = signal(currentTimeWindow, 512, false);
+					//first1 = 0;
+					//first1[200] = 1;
+					//first2 = 0;
+					//first2[200] = 1;
+					//print_line("signals acquired");
+					if (saveFile > 0)
+					{
+						  sig_add(saveTo,first1);
+						  sig_add(saveTo,first2);
+					}
+			      }
+			      set_matrix_row(signalsMemory1, 0,first1);
+			      set_matrix_row(signalsMemory2, 0,first2);
+			      detectionsTried = detectionsTried + 1;
+
+		    }
+
+		    //for (la = 0; la < positionAveraging; la = la + 1)
+		    else
+		    {
+			      if (fromFile)
+			      {
+					second1 = sig_read(saveTo,displace);
+					displace = displace + 1;
+					second2 = sig_read(saveTo,displace);
+					displace = displace + 1;
+			      }
+			      else
+			      {
+					acquire(1, second1, 2, second2);
+					//second1 = signal(currentTimeWindow, 512, false);
+					//second2 = signal(currentTimeWindow, 512, false);
+					
+					//second1 = 0;
+					//second1[201] = 1;
+					//second2 = 0;
+					//second2[201] = 1;
+					//print_line("signals acquired");
+					
+					if (saveFile > 0)
+					{
+						  sig_add(saveTo,second1);
+						  sig_add(saveTo,second2);
+					}
+			      }
+			      
+			      
+			      if (detectionsTried  == positionAveraging)//memory full
+			      {
+					for (ia = 0; ia < positionAveraging-1; ia = ia + 1)
+					{
+						  set_matrix_row(signalsMemory1, ia, get_matrix_row(signalsMemory1, ia +1));
+						  set_matrix_row(signalsMemory2, ia, get_matrix_row(signalsMemory2, ia +1));
+					}
+					detectionsPositive = push(detectionsPositive,-1);
+					detectionsSignal = push(detectionsSignal, -1);
+					xes = push(xes,-1);
+					yes = push(yes,-1);
+					weights1 = push(weights1,-1);
+					weights2 = push(weights2,-1);
+					
+					detectionsTried = positionAveraging - 1;//will be increased by 1 during further calculation
+					detectionsPositive[detectionsTried] = 0;//can be updated during further calculation
+					detectionsSignal[detectionsTried] = 0;
+			      }
+
+			      set_matrix_row(signalsMemory1, detectionsTried,second1);
+			      set_matrix_row(signalsMemory2, detectionsTried,second2);
+
+			      //first1 = get_matrix_row(signalsMemory1,0);
+			      //first2 = get_matrix_row(signalsMemory2,0);
+			      first1 = 0;
+			      first2 = 0;
+			      sumOfWeights1 = 0;
+			      sumOfWeights2 = 0;
+			      if (detectionsTried)
+			      {
+					first1 = get_matrix_row(signalsMemory1, 0);
+					first2 = get_matrix_row(signalsMemory2, 0);
+			      }
+			      else
+			      {
+					for (ia = 0; ia < detectionsTried; ia = ia + 1)
+					{
+						  //first1 = first1 + (ia+1)*get_matrix_row(signalsMemory1, ia);
+						  //first2 = first2 + (ia+1)*get_matrix_row(signalsMemory2, ia);
+						  //sumOfWeights = sumOfWeights + ia+1;
+						  first1 = first1 + weights1[ia]*get_matrix_row(signalsMemory1, ia);
+						  first2 = first2 + weights2[ia]*get_matrix_row(signalsMemory2, ia);
+						  sumOfWeights1 = sumOfWeights1 + weights1[ia];
+						  sumOfWeights2 = sumOfWeights2 + weights2[ia];
+					}
+					
+					first1 = first1/sumOfWeights1;
+					first2 = first2/sumOfWeights2;
+			      }
+			      
+			      
+		    
+			      difference1 = second1 - first1;
+			      difference2 = second2 - first2;
+			      
+			      r11 = first1;
+			      r12 = second1;
+			      //pause();
+			      
+			      first1 = second1;
+			      first2 = second2;
+			      
+			      (difference1) = push2(difference1, constPushInPoints);
+			      if (constPush < 0)
+			      {
+					for (ka = 0; ka < constPushInPoints; ka = ka + 1)
+					{
+						  difference1[ka] = 0;
+					}
+			      }
+			      
+			      
+			      filt1 = 3;
+			      filt2 = 5;
+			      rawPower1 = push(lf(abs(lf(first1,filt1,filt2,-6)), 0.3,0.45,-6)/50,-N/T);
+			      rawPower2 = push(lf(abs(lf(first2,filt1,filt2,-6)), 0.3,0.45,-6)/50,-N/T);
+			      r14 = rawPower1;
+			      
+			     // r11 = db(mag(fft(difference1)));
+			      //r12 = db(mag(fft(difference2)));
+			      //difference1 = lf(abs(lf(difference1,filt1,filt2,-6)), 1,1.4,-6);
+			      //difference2 = lf(abs(lf(difference2,filt1,filt2,-6)), 1,1.4,-6);
+			      
+			      difference1 = lf(abs(lf(difference1,filt1,filt2,-6)/(rawPower1 + 0.5)), 1,1.4,-6);
+			      difference2 = lf(push(abs(lf(difference2,filt1,filt2,-6)/(rawPower2 + 0.5)), 0.2/T*N), 1,1.4,-6);
+			      
+			      insert(difference1,0,14,zeros,0);
+			      insert(difference2,0,14,zeros,0);
+			      
+			      if (oldAlgorithm)
+			      {
+			      
+					
+					startAt = 3*pointsPerNs;
+			      }
+			      else
+			      {
+					//difference1 = abs(lf(difference1,filt1,filt2,-6));
+					//difference2 = abs(lf(difference2,filt1,filt2,-6));
+					startAt = 1*pointsPerNs;
+			      }
+			      
+			      (difference3) = delay_between(difference1, difference2);
+			      difference3 = -difference3;
+			      
+			       r7 = difference1;
+			      r8 = difference2;
+			      
+			      //pause();
+			      
+			      for (ia = 0; ia < startAt; ia = ia + 1)
+			      {
+					difference1[ia] = 0;
+					difference2[ia] = 0;
+			      }
+			      
+			      
+			      
+			      pos1 = 0;
+			      pos2 = 0;
+			      
+					
+			      maxv1 = max(difference1,pos1);
+			      maxv2 = max(difference2,pos2);
+			      //print_line("I'm here");
+			      weights1[detectionsTried] = 1/maxv1;
+			      weights2[detectionsTried] = 1/maxv2;
+			      if ((maxv1 > threshold) OR (maxv2 > threshold))
+			      {
+					detectionsSignal[detectionsTried] = 1;
+					//warnings[2] = 1;
+					//counter = 1;
+			      }
+			      
+			      if (maxv1 < threshold)
+			      {
+					if (fromFile)
+					{
+						  print_line("maxVal1 is less than threshold ", maxv1);
+					}
+					detectionsTried = detectionsTried + 1;
+					goto proceed;
+			      }
+			      if (maxv2 < threshold)
+			      {
+					if (fromFile)
+					{
+						  print_line("maxVal2 is less than threshold ", maxv2);
+					}
+					detectionsTried = detectionsTried + 1;
+					goto proceed;
+			      }
+			      //print_line("I'm here 2");
+					
+			      for (ia = startAt; ia < N; ia = ia + 1)
+			      {
+					if (difference1[ia] > 0.4*maxv1)
+					{
+						  goto br;
+					}
+			      }
+			      br:
+			      if (ia < N -1)
+			      {
+					for (ka = ia+400; ka < N; ka = ka + 1)
+					{
+						  difference1[ka] = 0;
+					}
+			      }
+					
+			      for (ia = startAt; ia < N; ia = ia + 1)
+			      {
+					if (difference2[ia] > 0.4*maxv2)
+					{
+						  goto br2;
+					}
+			      }
+			      br2:
+			      if (ia < N -1)
+			      {
+					for (ka = ia+400; ka < N; ka = ka + 1)
+					{
+						  difference2[ka] = 0;
+					}
+			      }
+			      
+			      //r9 = difference1;
+			      //r10 = difference2;
+			      //print_line("I'm here 3");
+			      if (oldAlgorithm)
+			      {
+					(pushAm1) = delay_between(difference1, signatureSignal);
+					(pushAm2) = delay_between(difference2, signatureSignal);
+					//print_line("I'm here 4");
+
+					pushAm1 = -pushAm1 ;
+					pushAm2 = -pushAm2;
+					(powSigPushed1) = push2(signatureSignal, pushAm1);
+					(powSigPushed2) = push2(signatureSignal, pushAm2);
+					//print_line("I'm here 5");
+
+					//r5 = powSigPushed1;
+					//r6 = powSigPushed2;
+					maxVal1 = max(powSigPushed1, pos1);
+					maxVal2 = max(powSigPushed2, pos2);
+			      }
+			      else
+			      {
+					for (ia = startAt; ia < N; ia = ia + 1)
+					{
+						  if (difference1[ia] > 1.5*threshold)
+						  {
+							    tempVal = difference1[ia];
+							    if (fromFile)
+							    {
+								      print_line("threshold reached in ch1 ", tempVal);
+							    }
+							    goto br3;
+						  }
+					}
+					br3:
+					pushAm1 = ia;
+						  
+					for (ia = startAt; ia < N; ia = ia + 1)
+					{
+						  if (difference2[ia] > 1.5*threshold)
+						  {
+							    tempVal = difference2[ia];
+							    if (fromFile)
+							    {
+								      print_line("threshold reached in ch2 ", tempVal);
+							    }
+							    goto br4;
+						  }
+					}
+					br4:
+					pushAm2 = ia;
+					
+					difference4 = pushAm2 - pushAm1;
+					if (fromFile)
+					{
+						  print_line("pushAm1 ", pushAm1, ", pushAm2 ", pushAm2, ", delay difference ", difference4);
+					}
+					
+					clear_variables();
+					//out(difference3, difference4);
+					pos1 = pushAm1;
+					pos2 = pushAm2;
+			      }
+					
+			      if (abs(pushAm1 - pushAm2) > 1.5/T*N)
+			      {
+					//out(pushAm1, pushAm2);
+					//pause();
+					//currentWarnings = 0;
+					//warnings[2] = 1;
+					//for (w = 0; w < 5; w = w+1)
+					//{
+						  //currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+					//}
+					//xysetwarning(currentWarnings);
+					counter = 1;
+					detectionsTried = detectionsTried + 1;
+					goto proceed;
+			      }
+			      if ((pushAm1 >= 512) and (pushAm2 >= 512))
+			      {
+					detectionsTried = detectionsTried + 1;
+					goto proceed;
+			      }
+
+			      
+			       if (oldAlgorithm)
+			      {
+					
+			      }
+			      else
+			      {
+					if ((pushAm1*T/N + newCoarseDelay- delayAtZero > 20) and (pushAm2*T/N + newCoarseDelay- delayAtZero > 20))
+					{
+						  if (abs(difference3 - difference4) > 20)
+						  {
+							    if (fromFile)
+							    {
+								      print_line("Correlation ", difference3, " gives different result than fronts ", difference4);
+							    }
+						  //out(difference3, difference4);
+						  //pause();
+							    detectionsTried = detectionsTried + 1;
+							    goto proceed;
+						  }
+					}
+			      }
+			      
+			      //twOffset = 2*rangeStart/c - leftDelay;
+			      //rr1 = pos1*T/N*c;
+			      //rr2 = pos2*T/N*c;
+			      twOffset = newCoarseDelay- delayAtZero;
+			      rr1 = (pos1*currentTimeWindow/N + twOffset)*c;
+			      rr2 = (pos2*currentTimeWindow/N + twOffset)*c;
+			      
+			      
+			      //out(rr2);
+			      
+			      (x,y) = ellipses_intersection(rr1,rr2,d);
+			      //out(rr1, rr2, pos1, pos2, twoffset, x,y);
+			      if (fromFile)
+			      {
+					print_line("Coordinates: rr1 ", rr1,", rr2 ",rr2, ", x ", x, ", y ",y);
+			      }
+			      
+			      
+			      //out(x);
+			      //out(y);
+			      pointsPerM = 500/(rangeEnd - rangeStart);
+		    
+			      //x = x*pointsPerM;
+			      //y = y*pointsPerM;
+			      x = x*100;
+			      y = y*100;
+			      xes[detectionsTried] = x;
+			      yes[detectionsTried] = y;
+			      detectionsPositive[detectionsTried] = 1;
+			      detectionsTried = detectionsTried + 1;
+			      
+			      //warnings[2] = 0;
+			      
+			      averageX = averageX + x;
+			      averageY = averageY + y;
+			      detections = detections + 1;
+			      
+			      
+			      //currentWarnings = 0;
+				//warnings[3] = 1;
+				//for (w = 0; w < 5; w = w+1)
+				//{
+					//currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+				//}
+				//xysetwarning(currentWarnings);
+				counter = 1;
+				
+			      //out(detections);
+			      proceed:
+		    }
+		    
+		    
+		    //sleep(500);
+		    if (detectionsTried >= positionAveraging)
+		    {
+		    
+			      currentWarnings = 0;
+			      
+			      detections = sum(detectionsPositive);
+			      //if (detections > positionAveraging/2)
+			      //r14 = detectionsPositive;
+			      //r15 = detectionsSignal;
+			      print_line("positive detections ", detections);
+			      if (detections > 2)
+			      {
+					averageX = 0;
+					averageY = 0;
+					warnings[2] = 0;
+					warnings[3] = 1;
+					
+					//xyplot(averageX/detections,averageY/detections);
+					
+					for (ia = 0; ia < positionAveraging; ia = ia + 1)
+					{
+						  if (detectionsPositive[ia])
+						  {
+							    averageX = averageX + xes[ia];
+							    averageY = averageY + yes[ia];
+						  }
+					}
+					xyplot(averageX/detections,averageY/detections);
+					avgX = averageX/detections;
+					avgY = averageY/detections;
+					print_line("Position ploted, x ", avgX, ", y ", avgY);
+			      }
+			      
+			      
+			      detections = sum(detectionsSignal);
+			      print_line("any detections ", detections);
+			      if ((detections > 1) and (sum(detectionsPositive) == 0))
+			      {
+					warnings[2] = 1;
+					warnings[3] = 0;
+			      }
+			      if (detections == 0)
+			      {
+					warnings[2] = 0;
+					warnings[3] = 0;
+			      }
+			      
+			      for (w = 0; w < 5; w = w+1)
+			      {
+					currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+			      }
+			      xysetwarning(currentWarnings);
+			      
+			      print_line("");
+			      //pause();
+
+			      if (detections == 0)//no detection
+			      {
+					currentWaitCycles = currentWaitCycles + 1;
+					if (currentWaitCycles > movementWaitCycles)
+					{
+						  detectionsPositive = 0;
+						  xes = 0;
+						  yes = 0;
+						  detectionsTried = 0;
+						  signalsMemory1 = 0;
+						  signalsMemory2 = 0;
+						  tracking = false;//enable this again
+						  currentWaitCycles = 0;
+						  xysetmode(3);
+						  print_line("Movement not detected. Starting breath detection.");
+						  set_acquire_points(2048);
+						  set_averaging(1,128);
+					}
+			      }
+			      else
+			      {
+					currentWaitCycles = 0;
+			      }
+		    }
+		    else
+		    {
+			      //pause();
+		    }
+
+	  }
+	  else//breath detection
+	  {
+	  xyclear();
+	  xyplot(0,-2000);
+		    tx1=time();
+		    for(i=0;i<m;i=i+1)
+		     {
+			      acquire(1,chan1, 2, chan2);
+			      if (i > 0)
+			      {
+					tempSig = chan1 - somePrev;
+					pos = 0;
+					value = max(tempSig, pos);
+					if (value > 2*threshold)
+					{
+						  tracking = true;
+						  warnings[4] = 0;
+						  goto end;
+					}
+			      }
+			      else
+			      {
+					somePrev = chan1;
+			      }
+			      set_matrix_row(A,i,lf(chan1,20,26,-6));
+			      set_matrix_row(A2,i,lf(chan2,20,26,-6));
+		    }
+		    xdt=(time()-tx1)/1000;
+		    print_line("Acquisition finished");
+		    
+		    if (saveFile > 0)
+		    {
+			      for(i=0;i<m;i=i+1)
+			      {
+					chan1 = get_matrix_row(A,i);
+					sig_add(saveTo,chan1);
+			      }
+
+			      for(i=0;i<m;i=i+1)
+			      {
+					chan2 = get_matrix_row(A2,i);
+					sig_add(saveTo,chan2);
+			      }
+			      
+		    }
+
+		    
+		    waiting_sec=ceil(xdt);
+		    //out(waiting_sec);
+		    bb = chan1;
+		    bb = 0;
+		    bbb = bb;
+		    bbb = 0;
+		    
+		    maximum = 0;
+		    maximumPos = 0;
+		    maximum2 = 0;
+		    maximumPos2 = 0;
+		    tempPos = 0;
+		    
+		    for(i=0;i<m;i=i+1)
+		    {
+			      sig = get_matrix_row(A,i);
+			      constPushInPoints = -constPush*N/T;
+			      (tempSig1) = push2(sig, constPushInPoints);
+			      //insert(empty,0,400,tempSig1,0);
+			      //insert(empty,0,10,tempSig1,1660);
+			      //insert(empty,0,10,tempSig1,2015);
+			      if (i < backAveragings)
+			      {
+					bb = bb + tempSig1;
+			      }
+			      set_matrix_row(A,i,tempSig1);
+			      
+			      sig = get_matrix_row(A2,i);
+			      //insert(empty,0,400,sig,0);
+			      //insert(empty,0,10,sig,1460);
+			      //insert(empty,0,10,sig,2015);
+			      if (i < backAveragings)
+			      {
+					bbb = bbb + sig;
+			      }
+			      set_matrix_row(A2,i,sig);
+		    }
+		    bb = bb/backAveragings;
+		    bbb = bbb/backAveragings;
+		    for(i=0;i<m;i=i+1)
+		    {
+			      if (i < backAveragings)
+			      {
+					set_matrix_row(Asub,i,get_matrix_row(A,i)-bb);
+					set_matrix_row(Asub2,i,get_matrix_row(A2,i)-bbb);
+			      }
+			      else
+			      {
+					if (i < m - backAveragings)
+					{
+						  bb = bb + get_matrix_row(A,i)/backAveragings - get_matrix_row(A,i - backAveragings)/backAveragings;
+						  bbb = bbb + get_matrix_row(A2,i)/backAveragings - get_matrix_row(A2,i - backAveragings)/backAveragings;      
+					}
+					backSubtrackted = bb;
+					backSubtrackted = get_matrix_row(A,i)-bb;
+					set_matrix_row(Asub,i,backSubtrackted);
+					val = max(backSubtrackted,tempPos);
+					if (val > movementThreshold)
+					{
+						  tracking = true;
+						  goto end;
+					}
+					
+					backSubtrackted = bbb;
+					backSubtrackted = get_matrix_row(A2,i)-bbb;
+					set_matrix_row(Asub2,i,backSubtrackted);
+					val = max(backSubtrackted,tempPos);
+					if (val > movementThreshold)
+					{
+						  tracking = true;
+						  goto end;
+					}
+					
+			      }
+		    }
+		    
+
+		    newSig = signal(15,m,false);
+		    newSig2 = signal(15,m,false);
+		    
+		    for (point = 0; point < 2048; point = point + 5)
+		    {
+			      for(i=0;i<m;i=i+1)
+			      {
+				       tempSig =  get_matrix_row(Asub,i);
+				       newSig[i] = tempSig[point];
+			      }
+			      //lol = mag(fft(lf(newSig, 3, 4, -6)));
+			      lol = mag(fft(newSig));
+			      
+			      val = max(lol,tempPos);
+			      if (val > maximum)
+			      {
+					maximum = val;
+					//out(maximum);
+					//out(point);
+					maximumPos = point;
+			      }
+			      
+			      for(i=0;i<m;i=i+1)
+			      {
+				       tempSig =  get_matrix_row(Asub2,i);
+				       newSig2[i] = tempSig[point];
+			      }
+			      //lol = mag(fft(lf(newSig2, 3, 4, -6)));
+			      lol = mag(fft(newSig2));
+			      
+			      val = max(lol,tempPos);
+			      if (val > maximum2)
+			      {
+					maximum2= val;
+					maximumPos2 = point;
+			      }
+		    }
+
+		    for(i=0;i<m;i=i+1)
+		    {
+			      tempSig =  get_matrix_row(Asub,i);
+			      newSig[i] = tempSig[maximumPos];
+			      tempSig =  get_matrix_row(Asub2,i);
+			      newSig2[i] = tempSig[maximumPos2];
+		    }
+		    //r13 = newSig;
+		   // r14 = newSig2;
+		    r15 = mag(fft(newSig));
+		    r16 = mag(fft(newSig2));
+
+		pos11 = 0;
+		spectrumMax1 = max(r15,pos11);
+		pos12 = 0;
+		spectrumMax2 = max(r16,pos12);
+		
+		tracking = true;
+		warnings[4] = 0;
+		draw(Asub);
+		print_line("Detection duration ", waiting_sec);
+		out(maximumPos);
+		out(maximumPos2);
+		
+		if (abs(pos11 - pos12) <= 1) 
+		{
+			if (spectrumMax1 > breatheThreshold)
+			{
+				if (spectrumMax2 > breatheThreshold)
+				{
+		    			
+					twOffset = newCoarseDelay- delayAtZero;
+					rr1 = (maximumPos*currentTimeWindow/2048 + twOffset)*c;
+					rr2 = (maximumPos2*currentTimeWindow/2048 + twOffset)*c;				
+
+					(x,y) = ellipses_intersection(rr1,rr2,d);
+			      
+		    
+					//x = x*100;
+					//y = (y - rangeStart - coordStart)*100;
+					x = x*100;
+					y = y*100;
+			      
+
+					xyplot(x,y);
+		    			
+		    			print_line("Breathing detected.");
+		    			tracking = false;
+		    			warnings[4] = 1;
+		    			
+		    			//pause();
+				}
+			}
+		    
+		}
+		end:
+		
+		currentWarnings = 0;
+
+		    for (w = 0; w < 5; w = w+1)
+		    {
+			      currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+		    }
+		    xysetwarning(currentWarnings);
+		if (tracking)
+		{
+		    xysetmode(2);
+		    print_line("Checking movement.");
+		    set_acquire_points(512);
+		    set_averaging(1,64);
+		}
+		else
+		{
+		    print_line("Starting new breath detection cycle.");
+		}
+	  }
+	  
+	  //if (counter <= 1)
+	  //{
+		    //print_line("Resetting warnings");
+		    //currentWarnings = 0;
+		    //warnings[1] = 0;
+		    //warnings[2] = 0;
+		    //warnings[3] = 0;
+		    //warnings[4] = 0;
+		    //for (w = 0; w < 5; w = w+1)
+		    //{
+			      //currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+		    //}
+		    //print_line("Warnings ", currentWarnings);
+		    //xysetwarning(currentWarnings);
+	  //}
+	  //else
+	  //{
+		    //counter = counter - 1;
+	  //}
+	  
+}

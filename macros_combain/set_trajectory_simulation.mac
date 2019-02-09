@@ -1,0 +1,495 @@
+clear_variables();
+clearTrace = 1;
+sleep(5000);
+oldAlgorithm = false;
+m = 128;
+numOfMeasurements = 20000;
+positionAveraging = 8;
+pulseDuration = 2.5;
+falloffDuration = 0.5;
+backAveragings = 4;
+d = 0.25;
+c = 0.3;//m/ns
+threshold = 1;
+movementThreshold = 50;
+movementWaitCycles = 5;
+currentWaitCycles = 0;
+breatheThreshold = 2;
+
+numberOfTargets = 1;
+acqDuration = 100;//ms
+
+falseDetectionRate = 0.01;
+missedDetectionRate = 0.01;
+defaultMaxDisplace = 20;
+maxDisplacePerM = 5;
+
+
+saveTo = "C:\data\interface_test3.sig";
+saveFile = 0;
+fromFile = 0;
+
+//signaturePath = "C:\tracing2015\data\human_signature_abs.sig";
+//signatureSig = sig_read(signaturePath,0);
+
+
+empty = signal(30,2048,false);
+empty = 0;
+
+if (fromFile)
+{
+	  b = sig_read(saveTo,0);
+}
+else
+{
+	  //b = ch2;
+	  b = signal(30,512, false);//signal acauired
+	  if (saveFile > 0)
+	  {
+		    sig_add(saveTo, b);
+		    sig_delete_all(saveTo);
+	  }
+}
+
+N = count(b);
+T = window(b);
+
+signatureSignal = b;
+
+
+
+powerSignal1 = b;
+powerSignal2 = b;
+
+pointsPerNs = N/T;
+nsPerPoint = T/N;
+
+A=matrix(m,2048);
+Asub=matrix(m,2048);
+A2=matrix(m,2048);
+Asub2=matrix(m,2048);
+
+maxDisplace = 4;
+divisionStep = 50;
+pointsPerMeter = 50;
+
+ant_num = 12;
+ant_pos = signal(10,ant_num,false);
+ant_pos[0] = 0;
+ant_pos[1] = 10;
+ant_pos[2] = 10;
+ant_pos[3] = 10;
+ant_pos[4] = 10;
+ant_pos[5] = 10;
+ant_pos[6] = 10;
+ant_pos[7] = 10;
+ant_pos[8] = 10;
+ant_pos[9] = 10;
+ant_pos[10] = 10;
+ant_pos[11] = 10;
+
+if (clearTrace == 1)
+{
+	xyclear();
+}
+
+windStarts = signal(1,5,false);//in meters
+windStarts[0] = 0;
+windStarts[1] = 2;
+windStarts[2] = 5;
+windStarts[3] = 10;
+windStarts[4] = 15;
+currentStart = 0;
+
+
+windSizes = signal(1,4,false);//in meters
+windSizes[0] = 2;
+windSizes[1] = 5;
+windSizes[2] = 10;
+windSizes[3] = 20;
+currentSize = 1;
+
+delayAtZero = 27;//where actual zero coordinate is
+preciseDelay = windStarts[currentStart]/(c/2)+delayAtZero;//delay until required start
+newCoarseDelay = 8*floor(preciseDelay/8);//coarseDelay, which can be set by device
+leftDelay = preciseDelay - newCoarseDelay;//always posityve
+coordStart = windStarts[currentStart];
+requiredWindowSize = windSizes[currentSize];
+currentTimeWindow = requiredWindowSize/(c/2) + leftDelay;
+coordStep = requiredWindowSize/4;
+windowSize = currentTimeWindow;
+
+
+set_acquire_points(512);
+set_averaging(1,64);
+set_coarse_delay(newCoarseDelay);
+set_time_base(currentTimeWindow/10);
+
+print_line("number of points set to 512");
+print_line("averaging set to 64");
+print_line("coarse delay set to ", newCoarseDelay);
+print_line("window set to ", currentTimeWindow);
+
+
+rangeStart = coordStart;
+if (rangeStart < 0)
+{
+	  rangeStart = 0;
+}
+rangeEnd =  rangeStart + requiredWindowSize;
+radius = 10;
+//xyinit(100,-500,100,1000,ant_pos,10,radius);
+xyinit(100*rangeStart,100*rangeEnd,100,1000,ant_pos,10,radius);
+//xyinit(1000,-maxDisplace*100,maxDisplace*100,1000,ant_pos,divisionStep,radius);
+xyaddlines(10,0,40,150,80,0,100,150);
+
+xysetwarning(0);
+xysetmode(0);
+
+
+out(rangeStart);
+out(rangeEnd);
+
+xysetradarcaption(0,100*rangeStart);
+xysetradarcaption(1,100*(rangeStart + coordStep));
+xysetradarcaption(2,100*(rangeStart + 2*coordStep));
+xysetradarcaption(3,100*(rangeStart + 3*coordStep));
+xysetradarcaption(4,100*(rangeStart + 4*coordStep));
+
+constPush = 0.0;
+constPushInPoints = -constPush*pointsPerNs;
+//xyinit(-maxDisplace*100,0,maxDisplace*100,5*100,antennasToDisplay,divisionStep,10);
+
+
+slidingWindowN = ceil(pulseDuration*pointsPerNs);
+slidingWindow = signal(pulseDuration, slidingWindowN, false);
+meanSig = slidingWindow;
+
+start1point = 0;
+start2point = floor(falloffDuration*slidingWindowN/pulseDuration);
+end1point = floor((pulseDuration - falloffDuration)*slidingWindowN/pulseDuration);
+end2point = slidingWindowN-1;
+
+slidingWindow = 0;
+for (ia = start1point; ia < start2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(-pi()/2 + pi() *(ia - start1point)/(start2point - start1point)))/2;
+}
+for (ia = start2point; ia < end1point; ia = ia + 1)
+{
+	  slidingWindow[ia] = 1;
+}
+for (ia = end1point; ia < end2point; ia = ia + 1)
+{
+	  slidingWindow[ia] = (1 + sin(pi()/2 + pi() *(ia - end1point)/(end2point - end1point)))/2;
+}
+
+signalPart = signal(pulseDuration,slidingWindowN,false);
+
+//r7 = b;
+//r8 = b;
+
+tracking = true;
+running = true;
+displace = 0;
+
+xysetmode(2);
+firstTime = true;
+warnings = signal(1,5,false);
+warnings = 0;
+counter = 0;
+
+while(running)
+{
+	  //main loop
+	  bs  = xygetbuttonstates();
+	  if (firstTime)
+	  {
+		    firstTime = false;
+		    bs[3] = 1;
+	  }
+	  if(bs[0] !=0)
+	  {
+		    //finished running
+		    print_line("button 1 pressed");
+		    xysetmode(0);
+		    xysetwarning(0);
+		   running = false;
+	  }
+	  if(bs[1] !=0)
+	  {
+		    //cycle through possible window starts
+		   //print_line("button 2 pressed");
+		   currentStart = currentStart + 1;
+		   if (currentStart > 4)
+		   {
+			      currentStart = 0;
+		   }
+		   
+		   //set_acquire_points(512);
+		   //set_averaging(1,64);
+		   print_line("number of points set to 512");
+		    print_line("averaging set to 64");
+		   
+		  preciseDelay = windStarts[currentStart]/(c/2)+delayAtZero;//delay until required start
+		    newCoarseDelay = 8*floor(preciseDelay/8);//coarseDelay, which can be set by device
+		    leftDelay = preciseDelay - newCoarseDelay;//always posityve
+		    coordStart = windStarts[currentStart];
+		    requiredWindowSize = windSizes[currentSize];
+		    currentTimeWindow = requiredWindowSize/(c/2) + leftDelay;
+		    coordStep = requiredWindowSize/4;
+		    windowSize = currentTimeWindow;
+		   set_coarse_delay(newCoarseDelay);
+		   set_time_base(currentTimeWindow/10);
+		   print_line("coarse delay set to ", newCoarseDelay);
+		   
+		   rangeStart = coordStart;
+		   if (rangeStart < 0)
+		   {
+			      rangeStart = 0;
+		   }
+		    rangeEnd =  rangeStart + requiredWindowSize;
+		    out(rangeStart, rangeEnd);
+		    xyinit(100*rangeStart,100*rangeEnd,100,1000,ant_pos,10,radius);
+
+		    xysetradarcaption(0,100*rangeStart);
+		    xysetradarcaption(1,100*(rangeStart + coordStep));
+		    xysetradarcaption(2,100*(rangeStart + 2*coordStep));
+		    xysetradarcaption(3,100*(rangeStart + 3*coordStep));
+		    xysetradarcaption(4,100*(rangeStart + 4*coordStep));
+
+
+	  }
+	  if(bs[2] !=0)
+	  {
+		    //cycle through possible window sizes
+		   //print_line("button 3 pressed");
+		   currentSize = currentSize + 1;
+		   if (currentSize > 3)
+		   {
+			      currentSize = 0;
+		   }
+		   
+		   preciseDelay = windStarts[currentStart]/(c/2)+delayAtZero;//delay until required start
+		    newCoarseDelay = 8*floor(preciseDelay/8);//coarseDelay, which can be set by device
+		    leftDelay = preciseDelay - newCoarseDelay;//always posityve
+		    coordStart = windStarts[currentStart];
+		    requiredWindowSize = windSizes[currentSize];
+		    currentTimeWindow = requiredWindowSize/(c/2) + leftDelay;
+		    coordStep = requiredWindowSize/4;
+		    windowSize = currentTimeWindow;
+		   set_coarse_delay(newCoarseDelay);
+		   set_time_base(currentTimeWindow/10);
+		   print_line("coarse delay set to ", newCoarseDelay);
+		   
+		   rangeStart = coordStart;
+		   if (rangeStart < 0)
+		   {
+			      rangeStart = 0;
+		   }
+		    rangeEnd =  rangeStart + requiredWindowSize;
+		    xyinit(100*rangeStart,100*rangeEnd,100,1000,ant_pos,10,radius);
+
+		    xysetradarcaption(0,100*rangeStart);
+		    xysetradarcaption(1,100*(rangeStart + coordStep));
+		    xysetradarcaption(2,100*(rangeStart + 2*coordStep));
+		    xysetradarcaption(3,100*(rangeStart + 3*coordStep));
+		    xysetradarcaption(4,100*(rangeStart + 4*coordStep));
+	  }
+	  if(bs[3] !=0)
+	  {
+		    //calibration and checks
+		   print_line("Calibration in process");
+		   
+		   currentCoarseDelay = get_coarse_delay();
+		   currentTimeBase = get_time_base();
+		   set_coarse_delay(0);
+		   set_time_base(2);
+		   set_acquire_points(512);
+		   set_averaging(0,1);
+		   tracking = true;
+		   
+		   xysetmode(1);
+		   avgRms = 0;
+		   avgRms2 = 0;
+
+		    for (ia = 0; ia < 3; ia = ia + 1)
+		    {
+			      acquire(1, temp1, 2, temp2);
+			      avgRms = avgRms + stdev(temp1);
+			      avgRms2 = avgRms2 + stdev(temp2);
+			      sleep(500);
+		    }
+
+		    avgRms = avgRms/10;
+		    avgRms2 = avgRms2/10;
+		    if ((avgRms > 4) OR (avgRms2 > 4))
+		    {
+			      warnings[0] = 1;
+			      xysetwarning(1);
+		    }
+		    else
+		    {
+				warnings = 0;
+				xysetwarning(0);
+		    }
+		    
+		    out(avgRms, avgRms2);
+		    
+		    set_averaging(1,64);
+		    xysetmode(2);
+		    set_coarse_delay(currentCoarseDelay);
+		    set_time_base(currentTimeBase/1000);
+	  }
+	  
+	  
+	  //for trajectory definition duration
+	  for (trajPoint = 0; trajPoint < trajLength; trajPoint = trajPoint + 1)
+	  {
+		    if (rand() < missedDetectionRate)
+		    {
+			      currentWarnings = 0;
+			      warnings[2] = 1;
+			      
+			      if (numberOfTargets == 1)
+			      {
+					for (w = 0; w < 5; w = w+1)
+					{
+						  currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+					}
+					xysetwarning(currentWarnings);
+					counter = 1;
+					
+					goto proceed;
+			      }
+		    }
+
+		    if (numberOfTargets > 1)
+		    {
+			      //test detection of both targets
+			      if (rand() > missedDetectionRate)//both targets detected
+			      {
+					  warnings[4] = 1;//test if this is multiple targets icon
+			      }
+		    }
+		    
+		    
+		    //detection of one or more targets
+		    //follow set trajectories
+		    range = sqrt(position1[0]*position1[0] + position1[1]*position1[1]);
+		    displacex = (rand() + rand() + rand())/3 - 0.5;
+		    displacex = displacex*(defaultMaxDisplace + range/100*maxDisplacePerM);
+		    
+		    displacey = (rand() + rand() + rand())/3 - 0.5;
+		    displacey = displacey*defaultMaxDisplace;
+		    
+		   if (currentTraj1 < maxVelChanges1-2)
+		   {
+			frameIndex = currentTraj1*3 + 2;
+			nextIndex = (currentTraj1 + 1)*3 + 2;
+			if (trajPoint > traj1[nextIndex])
+			{
+			  currentTraj1 = currentTraj1 + 1;
+			}
+		    }
+		      
+		      
+		      if (currentTraj1 < maxVelChanges1-1)
+		      {
+			      frameIndex = currentTraj1*3 + 2;
+			      nextIndex = (currentTraj1 + 1)*3 + 2;
+
+			      currentXindex = currentTraj1*3;
+			      nextXindex = (currentTraj1 + 1)*3;
+			      currentYindex = currentTraj1*3+1;
+			      nextYindex = (currentTraj1 + 1)*3 + 1;
+				  
+			      currentFrame = traj1[frameIndex];
+			      nextFrame = traj1[nextIndex];
+				  
+			      dx = traj1[nextXindex] - traj1[currentXindex];
+			      dy = traj1[nextYindex] - traj1[currentYindex];
+			
+			      x = traj1[currentXindex] + (trajPoint - currentFrame)*dx/(nextFrame - currentFrame);
+			      y = traj1[currentYindex] + (trajPoint - currentFrame)*dy/(nextFrame - currentFrame);
+		    
+			      xyplot(x, y);//need to change this, if additional traces can be set
+		    }
+		    if (numberOfTargets > 1)
+		    {
+			      range = sqrt(position2[0]*position2[0] + position2[1]*position2[1]);
+			      displacex = (rand() + rand() + rand())/3 - 0.5;
+			      displacex = displacex*(defaultMaxDisplace + range/100*maxDisplacePerM);
+			      
+			      displacey = (rand() + rand() + rand())/3 - 0.5;
+			      displacey = displacey*defaultMaxDisplace;
+			      
+			     if (currentTraj2 < maxVelChanges2-2)
+			     {
+				  frameIndex = currentTraj2*3 + 2;
+				  nextIndex = (currentTraj2 + 1)*3 + 2;
+				  if (trajPoint > traj2[nextIndex])
+				  {
+				    currentTraj2 = currentTraj2 + 1;
+				  }
+			      }
+				
+				
+				if (currentTraj2 < maxVelChanges2-1)
+				{
+					frameIndex = currentTraj2*3 + 2;
+					nextIndex = (currentTraj2 + 1)*3 + 2;
+
+					currentXindex = currentTraj2*3;
+					nextXindex = (currentTraj2 + 1)*3;
+					currentYindex = currentTraj2*3+1;
+					nextYindex = (currentTraj2 + 1)*3 + 1;
+					    
+					currentFrame = traj2[frameIndex];
+					nextFrame = traj2[nextIndex];
+					    
+					dx = traj2[nextXindex] - traj2[currentXindex];
+					dy = traj2[nextYindex] - traj2[currentYindex];
+				  
+					x = traj2[currentXindex] + (trajPoint - currentFrame)*dx/(nextFrame - currentFrame);
+					y = traj2[currentYindex] + (trajPoint - currentFrame)*dy/(nextFrame - currentFrame);
+			      
+					xyplot(x, y);//need to change this, if additional traces can be set
+			      }
+		    }
+		    
+			      
+		    currentWarnings = 0;
+		    for (w = 0; w < 5; w = w+1)
+		    {
+			      currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+		    }
+		    xysetwarning(currentWarnings);
+		    counter = 1;
+		    
+		    proceed:
+		    sleep(acqDuration);
+	  }
+	  
+	  
+	  if (counter <= 1)
+	  {
+		    //print_line("Resetting warnings");
+		    currentWarnings = 0;
+		    warnings[1] = 0;
+		    warnings[2] = 0;
+		    warnings[3] = 0;
+		    //warnings[4] = 0;
+		    for (w = 0; w < 5; w = w+1)
+		    {
+			      currentWarnings = currentWarnings + warnings[w]*pow(2,w);
+		    }
+		    //print_line("Warnings ", currentWarnings);
+		    xysetwarning(currentWarnings);
+	  }
+	  else
+	  {
+		    counter = counter - 1;
+	  }
+	  
+}

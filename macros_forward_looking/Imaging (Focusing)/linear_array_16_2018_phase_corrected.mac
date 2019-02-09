@@ -1,5 +1,7 @@
 clear_variables();
 threshold = 7;//detction level
+reps = 3;
+
 
 object_step = 40; //object space grid calculation step, mm
 range = 2000;//distance from aperture of array to test area surface, mm
@@ -87,159 +89,174 @@ if (get_signals)
 	N=count(ch1);
 	shiftp = 5*N/W;
 	out(shiftp);
-	mt = matrix(num_of_steps*4,N);
+	mt = matrix(num_of_steps*4*reps,N);
+	diffs = matrix(64, N);
 	A=matrix(MaxY,MaxX);
 	signals = matrix(64,N/2);
 	
 	if (measure_background)
 	{
-		    sleep(pauseDuration*1000);
+		  sleep(pauseDuration*1000);
 		  set_trans_mask(15);
 		  set_trans_mask(14);
 		  sleep(550);
 		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+		  for (ka = 0; ka < reps; ka = ka + 1)
+		  {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 
-		    n1=floor(N/10);
-		    n2=N-floor(N/10);
-		    w2=back1;
-		    w2=1;
+			      n1=floor(N/10);
+			      n2=N-floor(N/10);
+			      w2=back1;
+			      w2=1;
 
-		    for(i=0;i<n1;i=i+1)
-		    {
-			      w2[i]=sqr(sqr(sin(i/n1*pi()/2)));
-		    }
+			      for(i=0;i<n1;i=i+1)
+			      {
+					w2[i]=sqr(sqr(sin(i/n1*pi()/2)));
+			      }
 
-		    upper = N - n2;
-		    for(i=0;i< upper;i=i+1)
-		    {
-			      index = n2 + i;
-			      w2[index]=sqr(sqr(sin(pi()*(upper - i)/(upper)/2)));
-		    }
-		    base01 = w2*lf(back1,4,6,-8);
-		    base02 = w2*lf(back2,4,6,-8);
-		    base03 = w2*lf(back3,4,6,-8);
-		    base04 = w2*lf(back4,4,6,-8);
-		    base05 = w2*lf(back5,4,6,-8);
-		    base06 = w2*lf(back6,4,6,-8);
-		    base07 = w2*lf(back7,4,6,-8);
-		    base08 = w2*lf(back8,4,6,-8);
-		    
-		    r11 = base01;
+			      upper = N - n2;
+			      for(i=0;i< upper;i=i+1)
+			      {
+					index = n2 + i;
+					w2[index]=sqr(sqr(sin(pi()*(upper - i)/(upper)/2)));
+			      }
+			      base01 = w2*lf(back1,4,6,-8);
+			      base02 = w2*lf(back2,4,6,-8);
+			      base03 = w2*lf(back3,4,6,-8);
+			      base04 = w2*lf(back4,4,6,-8);
+			      base05 = w2*lf(back5,4,6,-8);
+			      base06 = w2*lf(back6,4,6,-8);
+			      base07 = w2*lf(back7,4,6,-8);
+			      base08 = w2*lf(back8,4,6,-8);
+			      
+			      r11 = base01;
 
-		  set_matrix_row(mt,0,base01);
-		  set_matrix_row(mt,1,push(base01,-shiftp));
-		  set_matrix_row(mt,2,base02);
-		  set_matrix_row(mt,3,push(base02,-shiftp));
-		  set_matrix_row(mt,4,base03);
-		  set_matrix_row(mt,5,push(base03,-shiftp));
-		  set_matrix_row(mt,6,base04);
-		  set_matrix_row(mt,7,push(base04,-shiftp));
-		  set_matrix_row(mt,8,base05);
-		  set_matrix_row(mt,9,push(base05,-shiftp));
-		  set_matrix_row(mt,10,base06);
-		  set_matrix_row(mt,11,push(base06,-shiftp));
-		  set_matrix_row(mt,12,base07);
-		  set_matrix_row(mt,13,push(base07,-shiftp));
-		  set_matrix_row(mt,14,base08);
-		  set_matrix_row(mt,15,push(base08,-shiftp));
+			    set_matrix_row(mt,ka*64 + 0,base01);
+			    set_matrix_row(mt,ka*64 + 1,push(base01,-shiftp));
+			    set_matrix_row(mt,ka*64 + 2,base02);
+			    set_matrix_row(mt,ka*64 + 3,push(base02,-shiftp));
+			    set_matrix_row(mt,ka*64 + 4,base03);
+			    set_matrix_row(mt,ka*64 + 5,push(base03,-shiftp));
+			    set_matrix_row(mt,ka*64 + 6,base04);
+			    set_matrix_row(mt,ka*64 + 7,push(base04,-shiftp));
+			    set_matrix_row(mt,ka*64 + 8,base05);
+			    set_matrix_row(mt,ka*64 + 9,push(base05,-shiftp));
+			    set_matrix_row(mt,ka*64 + 10,base06);
+			    set_matrix_row(mt,ka*64 + 11,push(base06,-shiftp));
+			    set_matrix_row(mt,ka*64 + 12,base07);
+			    set_matrix_row(mt,ka*64 + 13,push(base07,-shiftp));
+			    set_matrix_row(mt,ka*64 + 14,base08);
+			    set_matrix_row(mt,ka*64 + 15,push(base08,-shiftp));
+		  }
 		  
-		  set_trans_mask(15);
-		  set_trans_mask(13);
-		  sleep(150);
-		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+		  
+		    set_trans_mask(15);
+		    set_trans_mask(13);
+		    sleep(150);
+		    //acquire(255,255);
+		    for (ka = 0; ka < reps; ka = ka + 1)
+		    {
+			      acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 
-		    base11 = w2*lf(back1,4,6,-8);
-		    base12 = w2*lf(back2,4,6,-8);
-		    base13 = w2*lf(back3,4,6,-8);
-		    base14 = w2*lf(back4,4,6,-8);
-		    base15 = w2*lf(back5,4,6,-8);
-		    base16 = w2*lf(back6,4,6,-8);
-		    base17 = w2*lf(back7,4,6,-8);
-		    base18 = w2*lf(back8,4,6,-8);
-		  set_matrix_row(mt,16,base11);
-		  set_matrix_row(mt,17,push(base11,-shiftp));
-		  set_matrix_row(mt,18,base12);
-		  set_matrix_row(mt,19,push(base12,-shiftp));
-		  set_matrix_row(mt,20,base13);
-		  set_matrix_row(mt,21,push(base13,-shiftp));
-		  set_matrix_row(mt,22,base14);
-		  set_matrix_row(mt,23,push(base14,-shiftp));
-		  set_matrix_row(mt,24,base15);
-		  set_matrix_row(mt,25,push(base15,-shiftp));
-		  set_matrix_row(mt,26,base16);
-		  set_matrix_row(mt,27,push(base16,-shiftp));
-		  set_matrix_row(mt,28,base17);
-		  set_matrix_row(mt,29,push(base17,-shiftp));
-		  set_matrix_row(mt,30,base18);
-		  set_matrix_row(mt,31,push(base18,-shiftp));
+			      base11 = w2*lf(back1,4,6,-8);
+			      base12 = w2*lf(back2,4,6,-8);
+			      base13 = w2*lf(back3,4,6,-8);
+			      base14 = w2*lf(back4,4,6,-8);
+			      base15 = w2*lf(back5,4,6,-8);
+			      base16 = w2*lf(back6,4,6,-8);
+			      base17 = w2*lf(back7,4,6,-8);
+			      base18 = w2*lf(back8,4,6,-8);
+			      
+			      set_matrix_row(mt,ka*64 + 16,base11);
+			      set_matrix_row(mt,ka*64 + 17,push(base11,-shiftp));
+			      set_matrix_row(mt,ka*64 + 18,base12);
+			      set_matrix_row(mt,ka*64 + 19,push(base12,-shiftp));
+			      set_matrix_row(mt,ka*64 + 20,base13);
+			      set_matrix_row(mt,ka*64 + 21,push(base13,-shiftp));
+			      set_matrix_row(mt,ka*64 + 22,base14);
+			      set_matrix_row(mt,ka*64 + 23,push(base14,-shiftp));
+			      set_matrix_row(mt,ka*64 + 24,base15);
+			      set_matrix_row(mt,ka*64 + 25,push(base15,-shiftp));
+			      set_matrix_row(mt,ka*64 + 26,base16);
+			      set_matrix_row(mt,ka*64 + 27,push(base16,-shiftp));
+			      set_matrix_row(mt,ka*64 + 28,base17);
+			      set_matrix_row(mt,ka*64 + 29,push(base17,-shiftp));
+			      set_matrix_row(mt,ka*64 + 30,base18);
+			      set_matrix_row(mt,ka*64 + 31,push(base18,-shiftp));
+		  }
 
 		  set_trans_mask(15);
 		  set_trans_mask(11);
 		  sleep(150);
 		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+		    for (ka = 0; ka < reps; ka = ka + 1)
+		    {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 
-		    base21 = w2*lf(back1,4,6,-8);
-		    base22 = w2*lf(back2,4,6,-8);
-		    base23 = w2*lf(back3,4,6,-8);
-		    base24 = w2*lf(back4,4,6,-8);
-		    base25 = w2*lf(back5,4,6,-8);
-		    base26 = w2*lf(back6,4,6,-8);
-		    base27 = w2*lf(back7,4,6,-8);
-		    base28 = w2*lf(back8,4,6,-8);
-		  set_matrix_row(mt,32,base21);
-		  set_matrix_row(mt,33,push(base21,-shiftp));
-		  set_matrix_row(mt,34,base22);
-		  set_matrix_row(mt,35,push(base22,-shiftp));
-		  set_matrix_row(mt,36,base23);
-		  set_matrix_row(mt,37,push(base23,-shiftp));
-		  set_matrix_row(mt,38,base24);
-		  set_matrix_row(mt,39,push(base24,-shiftp));
-		  set_matrix_row(mt,40,base25);
-		  set_matrix_row(mt,41,push(base25,-shiftp));
-		  set_matrix_row(mt,42,base26);
-		  set_matrix_row(mt,43,push(base26,-shiftp));
-		  set_matrix_row(mt,44,base27);
-		  set_matrix_row(mt,45,push(base27,-shiftp));
-		  set_matrix_row(mt,46,base28);
-		  set_matrix_row(mt,47,push(base28,-shiftp));
+			      base21 = w2*lf(back1,4,6,-8);
+			      base22 = w2*lf(back2,4,6,-8);
+			      base23 = w2*lf(back3,4,6,-8);
+			      base24 = w2*lf(back4,4,6,-8);
+			      base25 = w2*lf(back5,4,6,-8);
+			      base26 = w2*lf(back6,4,6,-8);
+			      base27 = w2*lf(back7,4,6,-8);
+			      base28 = w2*lf(back8,4,6,-8);
+			    set_matrix_row(mt,ka*64 + 32,base21);
+			    set_matrix_row(mt,ka*64 + 33,push(base21,-shiftp));
+			    set_matrix_row(mt,ka*64 + 34,base22);
+			    set_matrix_row(mt,ka*64 + 35,push(base22,-shiftp));
+			    set_matrix_row(mt,ka*64 + 36,base23);
+			    set_matrix_row(mt,ka*64 + 37,push(base23,-shiftp));
+			    set_matrix_row(mt,ka*64 + 38,base24);
+			    set_matrix_row(mt,ka*64 + 39,push(base24,-shiftp));
+			    set_matrix_row(mt,ka*64 + 40,base25);
+			    set_matrix_row(mt,ka*64 + 41,push(base25,-shiftp));
+			    set_matrix_row(mt,ka*64 + 42,base26);
+			    set_matrix_row(mt,ka*64 + 43,push(base26,-shiftp));
+			    set_matrix_row(mt,ka*64 + 44,base27);
+			    set_matrix_row(mt,ka*64 + 45,push(base27,-shiftp));
+			    set_matrix_row(mt,ka*64 + 46,base28);
+			    set_matrix_row(mt,ka*64 + 47,push(base28,-shiftp));
+		    }
 
 		  set_trans_mask(15);
 		  set_trans_mask(7);
 		  sleep(150);
 		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+		  for (ka = 0; ka < reps; ka = ka + 1)
+		    {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 
-		    base31 = w2*lf(back1,4,6,-8);
-		    base32 = w2*lf(back2,4,6,-8);
-		    base33 = w2*lf(back3,4,6,-8);
-		    base34 = w2*lf(back4,4,6,-8);
-		    base35 = w2*lf(back5,4,6,-8);
-		    base36 = w2*lf(back6,4,6,-8);
-		    base37 = w2*lf(back7,4,6,-8);
-		    base38 = w2*lf(back8,4,6,-8);
+			      base31 = w2*lf(back1,4,6,-8);
+			      base32 = w2*lf(back2,4,6,-8);
+			      base33 = w2*lf(back3,4,6,-8);
+			      base34 = w2*lf(back4,4,6,-8);
+			      base35 = w2*lf(back5,4,6,-8);
+			      base36 = w2*lf(back6,4,6,-8);
+			      base37 = w2*lf(back7,4,6,-8);
+			      base38 = w2*lf(back8,4,6,-8);
 
-		  set_matrix_row(mt,48,base31);
-		  set_matrix_row(mt,49,push(base31,-shiftp));
-		  set_matrix_row(mt,50,base32);
-		  set_matrix_row(mt,51,push(base32,-shiftp));
-		  set_matrix_row(mt,52,base33);
-		  set_matrix_row(mt,53,push(base33,-shiftp));
-		  set_matrix_row(mt,54,base34);
-		  set_matrix_row(mt,55,push(base34,-shiftp));
-		  set_matrix_row(mt,56,base35);
-		  set_matrix_row(mt,57,push(base35,-shiftp));
-		  set_matrix_row(mt,58,base36);
-		  set_matrix_row(mt,59,push(base36,-shiftp));
-		  set_matrix_row(mt,60,base37);
-		  set_matrix_row(mt,61,push(base37,-shiftp));
-		  set_matrix_row(mt,62,base38);
-		  set_matrix_row(mt,63,push(base38,-shiftp));
+			    set_matrix_row(mt,ka*64 + 48,base31);
+			    set_matrix_row(mt,ka*64 + 49,push(base31,-shiftp));
+			    set_matrix_row(mt,ka*64 + 50,base32);
+			    set_matrix_row(mt,ka*64 + 51,push(base32,-shiftp));
+			    set_matrix_row(mt,ka*64 + 52,base33);
+			    set_matrix_row(mt,ka*64 + 53,push(base33,-shiftp));
+			    set_matrix_row(mt,ka*64 + 54,base34);
+			    set_matrix_row(mt,ka*64 + 55,push(base34,-shiftp));
+			    set_matrix_row(mt,ka*64 + 56,base35);
+			    set_matrix_row(mt,ka*64 + 57,push(base35,-shiftp));
+			    set_matrix_row(mt,ka*64 + 58,base36);
+			    set_matrix_row(mt,ka*64 + 59,push(base36,-shiftp));
+			    set_matrix_row(mt,ka*64 + 60,base37);
+			    set_matrix_row(mt,ka*64 + 61,push(base37,-shiftp));
+			    set_matrix_row(mt,ka*64 + 62,base38);
+			    set_matrix_row(mt,ka*64 + 63,push(base38,-shiftp));
+		  }
 
 
-		  for (ia = 0; ia < 64; ia = ia + 1)
+		  for (ia = 0; ia < reps*64; ia = ia + 1)
 		  {
 			  sig_add(background_path,get_matrix_row(mt, ia));
 		  }
@@ -261,294 +278,595 @@ if (get_signals)
 
 	if (measure_object)
 	{
-		    //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-
-		    ref1 = w2*lf(back1,4,6,-8);
-		    ref2 = w2*lf(back2,4,6,-8);
-		    ref3 = w2*lf(back3,4,6,-8);
-		    ref4 = w2*lf(back4,4,6,-8);
-		    ref5 = w2*lf(back5,4,6,-8);
-		    ref6 = w2*lf(back6,4,6,-8);
-		    ref7 = w2*lf(back7,4,6,-8);
-		    ref8 = w2*lf(back8,4,6,-8);
-		   
-		    r12 = ref1;
-		    dt = 0;
-		    //(dt)=difference2(base11,ref);
-		    //compare1 = lf(base1,maxFreq,maxFreq*1.5,-8);
-		    //compare2 = lf(ref,maxFreq,maxFreq*1.5,-8);
-		    //(dt)=difference2(compare1,compare2);
-		    (dt)=difference2(base01,ref1);
-		    dt = -dt;
-		    back1=push2(ref1,dt);
+		    diffs = matrix(64, N);
+		    bestMean1 = 1000;
+		    bestMean2 = 1000;
+		    bestMean3 = 1000;
+		    bestMean4 = 1000;
+		    bestMean5 = 1000;
+		    bestMean6 = 1000;
+		    bestMean7 = 1000;
+		    bestMean8 = 1000;
+			      
+		    bestSignal1 = back1;
+		    bestSignal2 = back2;
+		    bestSignal3 = back3;
+		    bestSignal4 = back4;
+		    bestSignal5 = back5;
+		    bestSignal6 = back6;
+		    bestSignal7 = back7;
+		    bestSignal8 = back8;
 		    
-		    (dt)=difference2(base02,ref2);
-		    dt = -dt;
-		    back2=push2(ref2,dt);
-		    
-
-		    (dt)=difference2(base03,ref3);
-		    dt = -dt;
-		    ref3=push2(ref3,dt);
-		    
-
-		    (dt)=difference2(base04,ref4);
-		    dt = -dt;
-		    ref4=push2(ref4,dt);
-		    
-
-		    (dt)=difference2(base05,ref5);
-		    dt = -dt;
-		    ref5=push2(ref5,dt);
-		    
-
-		    (dt)=difference2(base06,ref6);
-		    dt = -dt;
-		    ref6=push2(ref6,dt);
-		    
-
-		    (dt)=difference2(base07,ref7);
-		    dt = -dt;
-		    ref7=push2(ref7,dt);
-		    
-
-		    (dt)=difference2(base08,ref8);
-		    dt = -dt;
-		    ref8=push2(ref8,dt);
-		    
-		  set_matrix_row(mt,0,ref1);
-		  set_matrix_row(mt,1,push(ref1,-shiftp));
-		  set_matrix_row(mt,2,ref2);
-		  set_matrix_row(mt,3,push(ref2,-shiftp));
-		  set_matrix_row(mt,4,ref3);
-		  set_matrix_row(mt,5,push(ref3,-shiftp));
-		  set_matrix_row(mt,6,ref4);
-		  set_matrix_row(mt,7,push(ref4,-shiftp));
-		  set_matrix_row(mt,8,ref5);
-		  set_matrix_row(mt,9,push(ref5,-shiftp));
-		  set_matrix_row(mt,10,ref6);
-		  set_matrix_row(mt,11,push(ref6,-shiftp));
-		  set_matrix_row(mt,12,ref7);
-		  set_matrix_row(mt,13,push(ref7,-shiftp));
-		  set_matrix_row(mt,14,ref8);
-		  set_matrix_row(mt,15,push(ref8,-shiftp));
+		  for (ka = 0; ka < reps; ka = ka + 1)
+		  {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+			      
+			      
+			      ref1 = w2*lf(back1,4,6,-8);
+			      ref2 = w2*lf(back2,4,6,-8);
+			      ref3 = w2*lf(back3,4,6,-8);
+			      ref4 = w2*lf(back4,4,6,-8);
+			      ref5 = w2*lf(back5,4,6,-8);
+			      ref6 = w2*lf(back6,4,6,-8);
+			      ref7 = w2*lf(back7,4,6,-8);
+			      ref8 = w2*lf(back8,4,6,-8);
+			      
+			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
+			      {
+					dt = 0;
+					
+					base1 = get_matrix_row(mt, kaa*64 + 0);
+					(dt)=difference2(base1,ref1);
+					dt = -dt;
+					ref1=push2(ref1,dt);
+					meanVal = mean(ref1 - base1);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean1 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base2 = get_matrix_row(mt, kaa*64 + 2);
+					(dt)=difference2(base2,ref2);
+					dt = -dt;
+					ref2=push2(ref2,dt);
+					meanVal = mean(ref2 - base2);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean2 = meanVal;
+						  bestSignal2 = ref2;
+					}
+					
+					base3 = get_matrix_row(mt, kaa*64 + 4);
+					(dt)=difference2(base3,ref3);
+					dt = -dt;
+					ref3=push2(ref3,dt);
+					meanVal = mean(ref3 - base3);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean3 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base4 = get_matrix_row(mt, kaa*64 + 6);
+					(dt)=difference2(base4,ref4);
+					dt = -dt;
+					ref4=push2(ref4,dt);
+					meanVal = mean(ref4 - base4);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean4 = meanVal;
+						  bestSignal4 = ref1;
+					}
+					
+					base5 = get_matrix_row(mt, kaa*64 + 8);
+					(dt)=difference2(base5,ref5);
+					dt = -dt;
+					ref5=push2(ref5,dt);
+					meanVal = mean(ref5 - base5);
+					if (abs(meanVal) < abs(bestMean5))
+					{
+						  bestMean5 = meanVal;
+						  bestSignal5 = ref5;
+					}
+					
+					base6 = get_matrix_row(mt, kaa*64 + 10);
+					(dt)=difference2(base6,ref6);
+					dt = -dt;
+					ref6=push2(ref6,dt);
+					meanVal = mean(ref6 - base6);
+					if (abs(meanVal) < abs(bestMean6))
+					{
+						  bestMean6 = meanVal;
+						  bestSignal6 = ref6;
+					}
+					
+					base7 = get_matrix_row(mt, kaa*64 + 12);
+					(dt)=difference2(base7,ref7);
+					dt = -dt;
+					ref7=push2(ref7,dt);
+					meanVal = mean(ref7 - base7);
+					if (abs(meanVal) < abs(bestMean7))
+					{
+						  bestMean7 = meanVal;
+						  bestSignal7 = ref7;
+					}
+					
+					base8 = get_matrix_row(mt, kaa*64 + 14);
+					(dt)=difference2(base8,ref8);
+					dt = -dt;
+					ref8=push2(ref8,dt);
+					meanVal = mean(ref8 - base8);
+					if (abs(meanVal) < abs(bestMean8))
+					{
+						  bestMean8 = meanVal;
+						  bestSignal8 = ref8;
+					} 
+			    }
+		  }
+		  
+		    set_matrix_row(diffs,0,bestSignal1);
+		    set_matrix_row(diffs,1,push(bestSignal1,-shiftp));
+		    set_matrix_row(diffs,2,bestSignal2);
+		    set_matrix_row(diffs,3,push(bestSignal2,-shiftp));
+		    set_matrix_row(diffs,4,bestSignal3);
+		    set_matrix_row(diffs,5,push(bestSignal3,-shiftp));
+		    set_matrix_row(diffs,6,bestSignal4);
+		    set_matrix_row(diffs,7,push(bestSignal4,-shiftp));
+		    set_matrix_row(diffs,8,bestSignal5);
+		    set_matrix_row(diffs,9,push(bestSignal5,-shiftp));
+		    set_matrix_row(diffs,10,bestSignal6);
+		    set_matrix_row(diffs,11,push(bestSignal6,-shiftp));
+		    set_matrix_row(diffs,12,bestSignal7);
+		    set_matrix_row(diffs,13,push(bestSignal7,-shiftp));
+		    set_matrix_row(diffs,14,bestSignal8);
+		    set_matrix_row(diffs,15,push(bestSignal8,-shiftp));
 		  
 		  set_trans_mask(15);
 		  set_trans_mask(13);
 		  sleep(150);
-		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-		   ref1 = w2*lf(back1,4,6,-8);
-		    ref2 = w2*lf(back2,4,6,-8);
-		    ref3 = w2*lf(back3,4,6,-8);
-		    ref4 = w2*lf(back4,4,6,-8);
-		    ref5 = w2*lf(back5,4,6,-8);
-		    ref6 = w2*lf(back6,4,6,-8);
-		    ref7 = w2*lf(back7,4,6,-8);
-		    ref8 = w2*lf(back8,4,6,-8);
-		   
-		    dt = 0;
-		    (dt)=difference2(base11,ref1);
-		    dt = -dt;
-		    back1=push2(ref1,dt);
+		  
+		  bestMean1 = 1000;
+		    bestMean2 = 1000;
+		    bestMean3 = 1000;
+		    bestMean4 = 1000;
+		    bestMean5 = 1000;
+		    bestMean6 = 1000;
+		    bestMean7 = 1000;
+		    bestMean8 = 1000;
+			      
+		    bestSignal1 = back1;
+		    bestSignal2 = back2;
+		    bestSignal3 = back3;
+		    bestSignal4 = back4;
+		    bestSignal5 = back5;
+		    bestSignal6 = back6;
+		    bestSignal7 = back7;
+		    bestSignal8 = back8;
 		    
-		    (dt)=difference2(base12,ref2);
-		    dt = -dt;
-		    back2=push2(ref2,dt);
-		    
-
-		    (dt)=difference2(base13,ref3);
-		    dt = -dt;
-		    ref3=push2(ref3,dt);
-		    
-
-		    (dt)=difference2(base14,ref4);
-		    dt = -dt;
-		    ref4=push2(ref4,dt);
-		    
-
-		    (dt)=difference2(base15,ref5);
-		    dt = -dt;
-		    ref5=push2(ref5,dt);
-		    
-
-		    (dt)=difference2(base16,ref6);
-		    dt = -dt;
-		    ref6=push2(ref6,dt);
-		    
-
-		    (dt)=difference2(base17,ref7);
-		    dt = -dt;
-		    ref7=push2(ref7,dt);
-		    
-
-		    (dt)=difference2(base18,ref8);
-		    dt = -dt;
-		    ref8=push2(ref8,dt);
-		    
-		  set_matrix_row(mt,16,ref1);
-		  set_matrix_row(mt,17,push(ref1,-shiftp));
-		  set_matrix_row(mt,18,ref2);
-		  set_matrix_row(mt,19,push(ref2,-shiftp));
-		  set_matrix_row(mt,20,ref3);
-		  set_matrix_row(mt,21,push(ref3,-shiftp));
-		  set_matrix_row(mt,22,ref4);
-		  set_matrix_row(mt,23,push(ref4,-shiftp));
-		  set_matrix_row(mt,24,ref5);
-		  set_matrix_row(mt,25,push(ref5,-shiftp));
-		  set_matrix_row(mt,26,ref6);
-		  set_matrix_row(mt,27,push(ref6,-shiftp));
-		  set_matrix_row(mt,28,ref7);
-		  set_matrix_row(mt,29,push(ref7,-shiftp));
-		  set_matrix_row(mt,30,ref8);
-		  set_matrix_row(mt,31,push(ref8,-shiftp));
+		  for (ka = 0; ka < reps; ka = ka + 1)
+		  {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+			      
+			      
+			      ref1 = w2*lf(back1,4,6,-8);
+			      ref2 = w2*lf(back2,4,6,-8);
+			      ref3 = w2*lf(back3,4,6,-8);
+			      ref4 = w2*lf(back4,4,6,-8);
+			      ref5 = w2*lf(back5,4,6,-8);
+			      ref6 = w2*lf(back6,4,6,-8);
+			      ref7 = w2*lf(back7,4,6,-8);
+			      ref8 = w2*lf(back8,4,6,-8);
+			      
+			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
+			      {
+					dt = 0;
+					
+					base1 = get_matrix_row(mt, kaa*64 + 16);
+					(dt)=difference2(base1,ref1);
+					dt = -dt;
+					ref1=push2(ref1,dt);
+					meanVal = mean(ref1 - base1);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean1 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base2 = get_matrix_row(mt, kaa*64 + 18);
+					(dt)=difference2(base2,ref2);
+					dt = -dt;
+					ref2=push2(ref2,dt);
+					meanVal = mean(ref2 - base2);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean2 = meanVal;
+						  bestSignal2 = ref2;
+					}
+					
+					base3 = get_matrix_row(mt, kaa*64 + 20);
+					(dt)=difference2(base3,ref3);
+					dt = -dt;
+					ref3=push2(ref3,dt);
+					meanVal = mean(ref3 - base3);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean3 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base4 = get_matrix_row(mt, kaa*64 + 22);
+					(dt)=difference2(base4,ref4);
+					dt = -dt;
+					ref4=push2(ref4,dt);
+					meanVal = mean(ref4 - base4);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean4 = meanVal;
+						  bestSignal4 = ref1;
+					}
+					
+					base5 = get_matrix_row(mt, kaa*64 + 24);
+					(dt)=difference2(base5,ref5);
+					dt = -dt;
+					ref5=push2(ref5,dt);
+					meanVal = mean(ref5 - base5);
+					if (abs(meanVal) < abs(bestMean5))
+					{
+						  bestMean5 = meanVal;
+						  bestSignal5 = ref5;
+					}
+					
+					base6 = get_matrix_row(mt, kaa*64 + 26);
+					(dt)=difference2(base6,ref6);
+					dt = -dt;
+					ref6=push2(ref6,dt);
+					meanVal = mean(ref6 - base6);
+					if (abs(meanVal) < abs(bestMean6))
+					{
+						  bestMean6 = meanVal;
+						  bestSignal6 = ref6;
+					}
+					
+					base7 = get_matrix_row(mt, kaa*64 + 28);
+					(dt)=difference2(base7,ref7);
+					dt = -dt;
+					ref7=push2(ref7,dt);
+					meanVal = mean(ref7 - base7);
+					if (abs(meanVal) < abs(bestMean7))
+					{
+						  bestMean7 = meanVal;
+						  bestSignal7 = ref7;
+					}
+					
+					base8 = get_matrix_row(mt, kaa*64 + 30);
+					(dt)=difference2(base8,ref8);
+					dt = -dt;
+					ref8=push2(ref8,dt);
+					meanVal = mean(ref8 - base8);
+					if (abs(meanVal) < abs(bestMean8))
+					{
+						  bestMean8 = meanVal;
+						  bestSignal8 = ref8;
+					} 
+			    }
+		  }
+		  
+		    set_matrix_row(diffs,16,bestSignal1);
+		    set_matrix_row(diffs,17,push(bestSignal1,-shiftp));
+		    set_matrix_row(diffs,18,bestSignal2);
+		    set_matrix_row(diffs,19,push(bestSignal2,-shiftp));
+		    set_matrix_row(diffs,20,bestSignal3);
+		    set_matrix_row(diffs,21,push(bestSignal3,-shiftp));
+		    set_matrix_row(diffs,22,bestSignal4);
+		    set_matrix_row(diffs,23,push(bestSignal4,-shiftp));
+		    set_matrix_row(diffs,24,bestSignal5);
+		    set_matrix_row(diffs,25,push(bestSignal5,-shiftp));
+		    set_matrix_row(diffs,26,bestSignal6);
+		    set_matrix_row(diffs,27,push(bestSignal6,-shiftp));
+		    set_matrix_row(diffs,28,bestSignal7);
+		    set_matrix_row(diffs,29,push(bestSignal7,-shiftp));
+		    set_matrix_row(diffs,30,bestSignal8);
+		    set_matrix_row(diffs,31,push(bestSignal8,-shiftp));
 
 		  set_trans_mask(15);
 		  set_trans_mask(11);
 		  sleep(150);
-		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
-		    ref1 = w2*lf(back1,4,6,-8);
-		    ref2 = w2*lf(back2,4,6,-8);
-		    ref3 = w2*lf(back3,4,6,-8);
-		    ref4 = w2*lf(back4,4,6,-8);
-		    ref5 = w2*lf(back5,4,6,-8);
-		    ref6 = w2*lf(back6,4,6,-8);
-		    ref7 = w2*lf(back7,4,6,-8);
-		    ref8 = w2*lf(back8,4,6,-8);
-		   
-		    dt = 0;
-		    (dt)=difference2(base21,ref1);
-		    dt = -dt;
-		    back1=push2(ref1,dt);
-		    
-		    (dt)=difference2(base22,ref2);
-		    dt = -dt;
-		    back2=push2(ref2,dt);
-		    
 
-		    (dt)=difference2(base23,ref3);
-		    dt = -dt;
-		    ref3=push2(ref3,dt);
+		  bestMean1 = 1000;
+		    bestMean2 = 1000;
+		    bestMean3 = 1000;
+		    bestMean4 = 1000;
+		    bestMean5 = 1000;
+		    bestMean6 = 1000;
+		    bestMean7 = 1000;
+		    bestMean8 = 1000;
+			      
+		    bestSignal1 = back1;
+		    bestSignal2 = back2;
+		    bestSignal3 = back3;
+		    bestSignal4 = back4;
+		    bestSignal5 = back5;
+		    bestSignal6 = back6;
+		    bestSignal7 = back7;
+		    bestSignal8 = back8;
 		    
-
-		    (dt)=difference2(base24,ref4);
-		    dt = -dt;
-		    ref4=push2(ref4,dt);
-		    
-
-		    (dt)=difference2(base25,ref5);
-		    dt = -dt;
-		    ref5=push2(ref5,dt);
-		    
-
-		    (dt)=difference2(base26,ref6);
-		    dt = -dt;
-		    ref6=push2(ref6,dt);
-		    
-
-		    (dt)=difference2(base27,ref7);
-		    dt = -dt;
-		    ref7=push2(ref7,dt);
-		    
-
-		    (dt)=difference2(base28,ref8);
-		    dt = -dt;
-		    ref8=push2(ref8,dt);
-		    
-		  set_matrix_row(mt,32,ref1);
-		  set_matrix_row(mt,33,push(ref1,-shiftp));
-		  set_matrix_row(mt,34,ref2);
-		  set_matrix_row(mt,35,push(ref2,-shiftp));
-		  set_matrix_row(mt,36,ref3);
-		  set_matrix_row(mt,37,push(ref3,-shiftp));
-		  set_matrix_row(mt,38,ref4);
-		  set_matrix_row(mt,39,push(ref4,-shiftp));
-		  set_matrix_row(mt,40,ref5);
-		  set_matrix_row(mt,41,push(ref5,-shiftp));
-		  set_matrix_row(mt,42,ref6);
-		  set_matrix_row(mt,43,push(ref6,-shiftp));
-		  set_matrix_row(mt,44,ref7);
-		  set_matrix_row(mt,45,push(ref7,-shiftp));
-		  set_matrix_row(mt,46,ref8);
-		  set_matrix_row(mt,47,push(ref8,-shiftp));
+		  for (ka = 0; ka < reps; ka = ka + 1)
+		  {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+			      
+			      
+			      ref1 = w2*lf(back1,4,6,-8);
+			      ref2 = w2*lf(back2,4,6,-8);
+			      ref3 = w2*lf(back3,4,6,-8);
+			      ref4 = w2*lf(back4,4,6,-8);
+			      ref5 = w2*lf(back5,4,6,-8);
+			      ref6 = w2*lf(back6,4,6,-8);
+			      ref7 = w2*lf(back7,4,6,-8);
+			      ref8 = w2*lf(back8,4,6,-8);
+			      
+			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
+			      {
+					dt = 0;
+					
+					base1 = get_matrix_row(mt, kaa*64 + 32);
+					(dt)=difference2(base1,ref1);
+					dt = -dt;
+					ref1=push2(ref1,dt);
+					meanVal = mean(ref1 - base1);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean1 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base2 = get_matrix_row(mt, kaa*64 + 34);
+					(dt)=difference2(base2,ref2);
+					dt = -dt;
+					ref2=push2(ref2,dt);
+					meanVal = mean(ref2 - base2);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean2 = meanVal;
+						  bestSignal2 = ref2;
+					}
+					
+					base3 = get_matrix_row(mt, kaa*64 + 36);
+					(dt)=difference2(base3,ref3);
+					dt = -dt;
+					ref3=push2(ref3,dt);
+					meanVal = mean(ref3 - base3);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean3 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base4 = get_matrix_row(mt, kaa*64 + 38);
+					(dt)=difference2(base4,ref4);
+					dt = -dt;
+					ref4=push2(ref4,dt);
+					meanVal = mean(ref4 - base4);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean4 = meanVal;
+						  bestSignal4 = ref1;
+					}
+					
+					base5 = get_matrix_row(mt, kaa*64 + 40);
+					(dt)=difference2(base5,ref5);
+					dt = -dt;
+					ref5=push2(ref5,dt);
+					meanVal = mean(ref5 - base5);
+					if (abs(meanVal) < abs(bestMean5))
+					{
+						  bestMean5 = meanVal;
+						  bestSignal5 = ref5;
+					}
+					
+					base6 = get_matrix_row(mt, kaa*64 + 42);
+					(dt)=difference2(base6,ref6);
+					dt = -dt;
+					ref6=push2(ref6,dt);
+					meanVal = mean(ref6 - base6);
+					if (abs(meanVal) < abs(bestMean6))
+					{
+						  bestMean6 = meanVal;
+						  bestSignal6 = ref6;
+					}
+					
+					base7 = get_matrix_row(mt, kaa*64 + 44);
+					(dt)=difference2(base7,ref7);
+					dt = -dt;
+					ref7=push2(ref7,dt);
+					meanVal = mean(ref7 - base7);
+					if (abs(meanVal) < abs(bestMean7))
+					{
+						  bestMean7 = meanVal;
+						  bestSignal7 = ref7;
+					}
+					
+					base8 = get_matrix_row(mt, kaa*64 + 46);
+					(dt)=difference2(base8,ref8);
+					dt = -dt;
+					ref8=push2(ref8,dt);
+					meanVal = mean(ref8 - base8);
+					if (abs(meanVal) < abs(bestMean8))
+					{
+						  bestMean8 = meanVal;
+						  bestSignal8 = ref8;
+					} 
+			    }
+		  }
+		  
+		    set_matrix_row(diffs,32,bestSignal1);
+		    set_matrix_row(diffs,33,push(bestSignal1,-shiftp));
+		    set_matrix_row(diffs,34,bestSignal2);
+		    set_matrix_row(diffs,35,push(bestSignal2,-shiftp));
+		    set_matrix_row(diffs,36,bestSignal3);
+		    set_matrix_row(diffs,37,push(bestSignal3,-shiftp));
+		    set_matrix_row(diffs,38,bestSignal4);
+		    set_matrix_row(diffs,39,push(bestSignal4,-shiftp));
+		    set_matrix_row(diffs,40,bestSignal5);
+		    set_matrix_row(diffs,41,push(bestSignal5,-shiftp));
+		    set_matrix_row(diffs,42,bestSignal6);
+		    set_matrix_row(diffs,43,push(bestSignal6,-shiftp));
+		    set_matrix_row(diffs,44,bestSignal7);
+		    set_matrix_row(diffs,45,push(bestSignal7,-shiftp));
+		    set_matrix_row(diffs,46,bestSignal8);
+		    set_matrix_row(diffs,47,push(bestSignal8,-shiftp));
 
 		  set_trans_mask(15);
 		  set_trans_mask(7);
 		  sleep(150);
-		  //acquire(255,255);
-		  acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 
-		    ref1 = w2*lf(back1,4,6,-8);
-		    ref2 = w2*lf(back2,4,6,-8);
-		    ref3 = w2*lf(back3,4,6,-8);
-		    ref4 = w2*lf(back4,4,6,-8);
-		    ref5 = w2*lf(back5,4,6,-8);
-		    ref6 = w2*lf(back6,4,6,-8);
-		    ref7 = w2*lf(back7,4,6,-8);
-		    ref8 = w2*lf(back8,4,6,-8);
-		   
-		    dt = 0;
-		    (dt)=difference2(base31,ref1);
-		    dt = -dt;
-		    back1=push2(ref1,dt);
+		  bestMean1 = 1000;
+		    bestMean2 = 1000;
+		    bestMean3 = 1000;
+		    bestMean4 = 1000;
+		    bestMean5 = 1000;
+		    bestMean6 = 1000;
+		    bestMean7 = 1000;
+		    bestMean8 = 1000;
+			      
+		    bestSignal1 = back1;
+		    bestSignal2 = back2;
+		    bestSignal3 = back3;
+		    bestSignal4 = back4;
+		    bestSignal5 = back5;
+		    bestSignal6 = back6;
+		    bestSignal7 = back7;
+		    bestSignal8 = back8;
 		    
-		    (dt)=difference2(base32,ref2);
-		    dt = -dt;
-		    back2=push2(ref2,dt);
-		    
-
-		    (dt)=difference2(base33,ref3);
-		    dt = -dt;
-		    ref3=push2(ref3,dt);
-		    
-
-		    (dt)=difference2(base34,ref4);
-		    dt = -dt;
-		    ref4=push2(ref4,dt);
-		    
-
-		    (dt)=difference2(base35,ref5);
-		    dt = -dt;
-		    ref5=push2(ref5,dt);
-		    
-
-		    (dt)=difference2(base36,ref6);
-		    dt = -dt;
-		    ref6=push2(ref6,dt);
-		    
-
-		    (dt)=difference2(base37,ref7);
-		    dt = -dt;
-		    ref7=push2(ref7,dt);
-		    
-
-		    (dt)=difference2(base38,ref8);
-		    dt = -dt;
-		    ref8=push2(ref8,dt);
-		    
-		  set_matrix_row(mt,48,ref1);
-		  set_matrix_row(mt,49,push(ref1,-shiftp));
-		  set_matrix_row(mt,50,ref2);
-		  set_matrix_row(mt,51,push(ref2,-shiftp));
-		  set_matrix_row(mt,52,ref3);
-		  set_matrix_row(mt,53,push(ref3,-shiftp));
-		  set_matrix_row(mt,54,ref4);
-		  set_matrix_row(mt,55,push(ref4,-shiftp));
-		  set_matrix_row(mt,56,ref5);
-		  set_matrix_row(mt,57,push(ref5,-shiftp));
-		  set_matrix_row(mt,58,ref6);
-		  set_matrix_row(mt,59,push(ref6,-shiftp));
-		  set_matrix_row(mt,60,ref7);
-		  set_matrix_row(mt,61,push(ref7,-shiftp));
-		  set_matrix_row(mt,62,ref8);
-		  set_matrix_row(mt,63,push(ref8,-shiftp));
+		  for (ka = 0; ka < reps; ka = ka + 1)
+		  {
+			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
+			      
+			      
+			      ref1 = w2*lf(back1,4,6,-8);
+			      ref2 = w2*lf(back2,4,6,-8);
+			      ref3 = w2*lf(back3,4,6,-8);
+			      ref4 = w2*lf(back4,4,6,-8);
+			      ref5 = w2*lf(back5,4,6,-8);
+			      ref6 = w2*lf(back6,4,6,-8);
+			      ref7 = w2*lf(back7,4,6,-8);
+			      ref8 = w2*lf(back8,4,6,-8);
+			      
+			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
+			      {
+					dt = 0;
+					
+					base1 = get_matrix_row(mt, kaa*64 + 48);
+					(dt)=difference2(base1,ref1);
+					dt = -dt;
+					ref1=push2(ref1,dt);
+					meanVal = mean(ref1 - base1);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean1 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base2 = get_matrix_row(mt, kaa*64 + 50);
+					(dt)=difference2(base2,ref2);
+					dt = -dt;
+					ref2=push2(ref2,dt);
+					meanVal = mean(ref2 - base2);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean2 = meanVal;
+						  bestSignal2 = ref2;
+					}
+					
+					base3 = get_matrix_row(mt, kaa*64 + 52);
+					(dt)=difference2(base3,ref3);
+					dt = -dt;
+					ref3=push2(ref3,dt);
+					meanVal = mean(ref3 - base3);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean3 = meanVal;
+						  bestSignal1 = ref1;
+					}
+					
+					base4 = get_matrix_row(mt, kaa*64 + 54);
+					(dt)=difference2(base4,ref4);
+					dt = -dt;
+					ref4=push2(ref4,dt);
+					meanVal = mean(ref4 - base4);
+					if (abs(meanVal) < abs(bestMean1))
+					{
+						  bestMean4 = meanVal;
+						  bestSignal4 = ref1;
+					}
+					
+					base5 = get_matrix_row(mt, kaa*64 + 56);
+					(dt)=difference2(base5,ref5);
+					dt = -dt;
+					ref5=push2(ref5,dt);
+					meanVal = mean(ref5 - base5);
+					if (abs(meanVal) < abs(bestMean5))
+					{
+						  bestMean5 = meanVal;
+						  bestSignal5 = ref5;
+					}
+					
+					base6 = get_matrix_row(mt, kaa*64 + 58);
+					(dt)=difference2(base6,ref6);
+					dt = -dt;
+					ref6=push2(ref6,dt);
+					meanVal = mean(ref6 - base6);
+					if (abs(meanVal) < abs(bestMean6))
+					{
+						  bestMean6 = meanVal;
+						  bestSignal6 = ref6;
+					}
+					
+					base7 = get_matrix_row(mt, kaa*64 + 60);
+					(dt)=difference2(base7,ref7);
+					dt = -dt;
+					ref7=push2(ref7,dt);
+					meanVal = mean(ref7 - base7);
+					if (abs(meanVal) < abs(bestMean7))
+					{
+						  bestMean7 = meanVal;
+						  bestSignal7 = ref7;
+					}
+					
+					base8 = get_matrix_row(mt, kaa*64 + 62);
+					(dt)=difference2(base8,ref8);
+					dt = -dt;
+					ref8=push2(ref8,dt);
+					meanVal = mean(ref8 - base8);
+					if (abs(meanVal) < abs(bestMean8))
+					{
+						  bestMean8 = meanVal;
+						  bestSignal8 = ref8;
+					} 
+			    }
+		  }
+		  
+		    set_matrix_row(diffs,48,bestSignal1);
+		    set_matrix_row(diffs,49,push(bestSignal1,-shiftp));
+		    set_matrix_row(diffs,50,bestSignal2);
+		    set_matrix_row(diffs,51,push(bestSignal2,-shiftp));
+		    set_matrix_row(diffs,52,bestSignal3);
+		    set_matrix_row(diffs,53,push(bestSignal3,-shiftp));
+		    set_matrix_row(diffs,54,bestSignal4);
+		    set_matrix_row(diffs,55,push(bestSignal4,-shiftp));
+		    set_matrix_row(diffs,56,bestSignal5);
+		    set_matrix_row(diffs,57,push(bestSignal5,-shiftp));
+		    set_matrix_row(diffs,58,bestSignal6);
+		    set_matrix_row(diffs,59,push(bestSignal6,-shiftp));
+		    set_matrix_row(diffs,60,bestSignal7);
+		    set_matrix_row(diffs,61,push(bestSignal7,-shiftp));
+		    set_matrix_row(diffs,62,bestSignal8);
+		    set_matrix_row(diffs,63,push(bestSignal8,-shiftp));
 
 
 		for (ia = 0; ia < 64; ia = ia + 1)
 		{
-			sig_add(path,get_matrix_row(mt, ia));
+			sig_add(path,get_matrix_row(diffs, ia));
 		}
 	}
 
@@ -563,7 +881,7 @@ else
 	r1=SIG_READ(path,0);
 	W=WINDOW(r1);
 	N=count(r1);
-	mt = matrix(num_of_steps*4,N);
+	mt = matrix(reps*num_of_steps*4,N);
 	A=matrix(MaxY,MaxX);
 	signals = matrix(64,N/2);
 }
@@ -588,7 +906,8 @@ if (corrected_delays)
 	{
 		for (ia = 0; ia<num_of_steps; ia=ia+1)
 		{	
-			tempRead =SIG_READ(path,ia + ka*16) - SIG_READ(background_path,ia + ka*16);
+			//tempRead =SIG_READ(path,ia + ka*16) - SIG_READ(background_path,ia + ka*16);
+			tempRead =SIG_READ(path,ia + ka*16);
 			insert(tempRead, 0, N/2-1, tempSignal, 0);
 			tempsp = fft(tempSignal);
 			tempsp[0] = 0;
@@ -606,7 +925,8 @@ else
 {
 	for (ia = 0; ia<4*num_of_steps; ia=ia+1)
 	{	
-		    tempRead = SIG_READ(path,ia) - SIG_READ(background_path,ia);
+		    //tempRead = SIG_READ(path,ia) - SIG_READ(background_path,ia);
+		    tempRead = SIG_READ(path,ia);
 		    insert(tempRead, 0, N/2-1, tempSignal, 0);
 		    tempsp = fft(tempSignal);
 		    tempsp[0] = 0;

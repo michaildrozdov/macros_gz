@@ -1,0 +1,129 @@
+maxVelChanges1 = 20;
+maxVelChanges2 = 20;
+currentTraj1 = 0;
+currentTraj2 = 0;
+traj1 = signal(1, maxVelChanges1*3, false);//dx, dy,frame
+traj2 = signal(1, maxVelChanges2*3, false);//dx, dy,frame
+trajLength = 440;
+
+//be at top right at 0
+traj1[0] = 140;
+traj1[1] = 430;
+traj1[2] = 0;
+
+//start at top right at 0
+traj1[3] = 140;
+traj1[4] = 430;
+traj1[5] = 2;
+
+
+//come at bottom right at 40
+traj1[6] = 140;
+traj1[7] = 230;
+traj1[8] = 40;
+
+
+//start at bottom right at 60
+traj1[9] = 140;
+traj1[10] = 230;
+traj1[11] = 60;
+
+
+//come at bottom left at 115
+traj1[12] = -140;
+traj1[13] = 230;
+traj1[14] = 115;
+
+
+//start at bottom left at 140
+traj1[15] = -140;
+traj1[16] = 230;
+traj1[17] = 140;
+
+
+//come at top left at 180
+traj1[18] = -140;
+traj1[19] = 430;
+traj1[20] = 180;
+
+
+//start at top left at 210
+traj1[21] = -140;
+traj1[22] = 430;
+traj1[23] = 210;
+
+//come at top right at 270
+traj1[24] = 140;
+traj1[25] = 430;
+traj1[26] = 270;
+
+//start at top right at 290
+traj1[27] = 140;
+traj1[28] = 430;
+traj1[29] = 290;
+
+//come at bottom right at 340
+traj1[30] = 140;
+traj1[31] = 230;
+traj1[32] = 340;
+
+//move from bottom right at 370
+traj1[33] = 140;
+traj1[34] = 230;
+traj1[35] = 370;
+
+//come at bottom left at 430
+traj1[36] = -140;
+traj1[37] = 230;
+traj1[38] = 430;
+
+
+//start at bottom left at 0
+traj2[0] = -140;
+traj2[1] = 230;
+traj2[2] = 0;
+//come at top left at 40
+traj2[3] = -140;
+traj2[4] = 430;
+traj2[5] = 40;
+//start at top left at 60
+traj2[6] = -140;
+traj2[7] = 430;
+traj2[8] = 60;
+//come at top right at 135
+traj2[9] = 140;
+traj2[10] = 430;
+traj2[11] = 135;
+//start at top right at 145
+traj2[12] = 140;
+traj2[13] = 430;
+traj2[14] = 145;
+//come at bottom right at 205
+traj2[15] = 140;
+traj2[16] = 230;
+traj2[17] = 205;
+//move from bottom right at 220
+traj2[18] = 140;
+traj2[19] = 230;
+traj2[20] = 220;
+//come at bottom left at 290
+traj2[21] = -140;
+traj2[22] = 230;
+traj2[23] = 290;
+//start at bottom left at 300
+traj2[24] = -140;
+traj2[25] = 230;
+traj2[26] = 300;
+//come at top left at 350
+traj2[27] = -140;
+traj2[28] = 430;
+traj2[29] = 350;
+//start at top left at 370
+traj2[30] = -140;
+traj2[31] = 430;
+traj2[32] = 370;
+//come at top right at 440
+traj2[0] = 140;
+traj2[1] = 430;
+traj2[2] = 440;
+
