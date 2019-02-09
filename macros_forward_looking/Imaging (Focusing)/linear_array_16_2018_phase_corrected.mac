@@ -302,18 +302,17 @@ if (get_signals)
 			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 			      
 			      
-			      ref1 = w2*lf(back1,4,6,-8);
-			      ref2 = w2*lf(back2,4,6,-8);
-			      ref3 = w2*lf(back3,4,6,-8);
-			      ref4 = w2*lf(back4,4,6,-8);
-			      ref5 = w2*lf(back5,4,6,-8);
-			      ref6 = w2*lf(back6,4,6,-8);
-			      ref7 = w2*lf(back7,4,6,-8);
-			      ref8 = w2*lf(back8,4,6,-8);
-			      
 			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
 			      {
 					dt = 0;
+					ref1 = w2*lf(back1,4,6,-8);
+					ref2 = w2*lf(back2,4,6,-8);
+					ref3 = w2*lf(back3,4,6,-8);
+					ref4 = w2*lf(back4,4,6,-8);
+					ref5 = w2*lf(back5,4,6,-8);
+					ref6 = w2*lf(back6,4,6,-8);
+					ref7 = w2*lf(back7,4,6,-8);
+					ref8 = w2*lf(back8,4,6,-8);
 					
 					base1 = get_matrix_row(mt, kaa*64 + 0);
 					(dt)=difference2(base1,ref1);
@@ -448,18 +447,16 @@ if (get_signals)
 		  {
 			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 			      
-			      
-			      ref1 = w2*lf(back1,4,6,-8);
-			      ref2 = w2*lf(back2,4,6,-8);
-			      ref3 = w2*lf(back3,4,6,-8);
-			      ref4 = w2*lf(back4,4,6,-8);
-			      ref5 = w2*lf(back5,4,6,-8);
-			      ref6 = w2*lf(back6,4,6,-8);
-			      ref7 = w2*lf(back7,4,6,-8);
-			      ref8 = w2*lf(back8,4,6,-8);
-			      
 			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
 			      {
+					ref1 = w2*lf(back1,4,6,-8);
+					ref2 = w2*lf(back2,4,6,-8);
+					ref3 = w2*lf(back3,4,6,-8);
+					ref4 = w2*lf(back4,4,6,-8);
+					ref5 = w2*lf(back5,4,6,-8);
+					ref6 = w2*lf(back6,4,6,-8);
+					ref7 = w2*lf(back7,4,6,-8);
+					ref8 = w2*lf(back8,4,6,-8);
 					dt = 0;
 					
 					base1 = get_matrix_row(mt, kaa*64 + 16);
@@ -595,18 +592,16 @@ if (get_signals)
 		  {
 			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 			      
-			      
-			      ref1 = w2*lf(back1,4,6,-8);
-			      ref2 = w2*lf(back2,4,6,-8);
-			      ref3 = w2*lf(back3,4,6,-8);
-			      ref4 = w2*lf(back4,4,6,-8);
-			      ref5 = w2*lf(back5,4,6,-8);
-			      ref6 = w2*lf(back6,4,6,-8);
-			      ref7 = w2*lf(back7,4,6,-8);
-			      ref8 = w2*lf(back8,4,6,-8);
-			      
 			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
 			      {
+					ref1 = w2*lf(back1,4,6,-8);
+					ref2 = w2*lf(back2,4,6,-8);
+					ref3 = w2*lf(back3,4,6,-8);
+					ref4 = w2*lf(back4,4,6,-8);
+					ref5 = w2*lf(back5,4,6,-8);
+					ref6 = w2*lf(back6,4,6,-8);
+					ref7 = w2*lf(back7,4,6,-8);
+					ref8 = w2*lf(back8,4,6,-8);
 					dt = 0;
 					
 					base1 = get_matrix_row(mt, kaa*64 + 32);
@@ -742,18 +737,16 @@ if (get_signals)
 		  {
 			    acquire(1,back1, 2, back2, 3, back3,4,back4,5,back5, 6, back6, 7, back7,8,back8);
 			      
-			      
-			      ref1 = w2*lf(back1,4,6,-8);
-			      ref2 = w2*lf(back2,4,6,-8);
-			      ref3 = w2*lf(back3,4,6,-8);
-			      ref4 = w2*lf(back4,4,6,-8);
-			      ref5 = w2*lf(back5,4,6,-8);
-			      ref6 = w2*lf(back6,4,6,-8);
-			      ref7 = w2*lf(back7,4,6,-8);
-			      ref8 = w2*lf(back8,4,6,-8);
-			      
 			      for (kaa = 0; kaa < reps; kaa = kaa + 1)
 			      {
+					ref1 = w2*lf(back1,4,6,-8);
+					ref2 = w2*lf(back2,4,6,-8);
+					ref3 = w2*lf(back3,4,6,-8);
+					ref4 = w2*lf(back4,4,6,-8);
+					ref5 = w2*lf(back5,4,6,-8);
+					ref6 = w2*lf(back6,4,6,-8);
+					ref7 = w2*lf(back7,4,6,-8);
+					ref8 = w2*lf(back8,4,6,-8);
 					dt = 0;
 					
 					base1 = get_matrix_row(mt, kaa*64 + 48);
