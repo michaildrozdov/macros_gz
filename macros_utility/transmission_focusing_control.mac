@@ -1,0 +1,47 @@
+n = 2048;
+
+deltaFunction = signal(10, n, false);
+deltaFunction = 0;
+deltaFunction[100] = 100;
+
+f1=fft(lf(deltaFunction, 2, 3, -6));
+f2=fft(lf(deltaFunction, 2, 3, -6));
+f3=fft(lf(deltaFunction, 2, 3, -6));
+f4=fft(lf(deltaFunction, 2, 3, -6));
+ex1=f1;
+dt = 20;
+for(i=0;i<n/2+1;i=i+1){
+	  ex1[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+ex2=f1;
+dt = 40;
+for(i=0;i<n/2+1;i=i+1){
+	  ex2[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+ex3=f1;
+dt = 60;
+for(i=0;i<n/2+1;i=i+1){
+	  ex3[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+
+ex4=f1;
+dt = 80;
+for(i=0;i<n/2+1;i=i+1){
+	  ex4[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+pushed1 = ifft(ex1*f1);
+pushed2 = ifft(ex2*f2);
+pushed3 = ifft(ex3*f3);
+pushed4 = ifft(ex4*f4);
+
+
+r1 = lf(deltaFunction, 2, 3, -6);
+r2 = pushed1 + pushed2 + pushed3 + pushed4;
+divideBy = ex1 + ex2 + ex3 + ex4;
+const = 0.0001;
+r3 = ifft(divi(fft(r2)*conj(divideBy), const + mag(divideBy)*mag(divideBy)));
+

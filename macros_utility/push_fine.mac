@@ -1,0 +1,11 @@
+(sig2) = push_fine(sig1,dt)
+{
+n=count(sig1);
+f=fft(sig1);
+ex=f;
+for(i=0;i<n/2+1;i=i+1){
+ex[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+sig2=ifft(ex*f);
+
+}

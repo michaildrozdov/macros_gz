@@ -1,0 +1,6 @@
+r2 = push2(r1, 3.5);
+base = r1;
+measured = r2;
+(dt) = difference2(measured, base);
+out(dt);
+r3 = push2(measured, dt);

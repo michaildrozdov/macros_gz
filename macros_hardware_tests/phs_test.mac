@@ -1,0 +1,96 @@
+//macro for stability with phase stab
+//signals on both ch1 and ch2 or just ch1
+//macro will first acquire reference signals for ch1 and ch2 
+//for set number of repetiotions new ch1 and ch2 will be acquired, first ch1 is compared against itself
+//it is default way for forward looking radar. Drift is estimated and ch1 is shifted.
+//then ch2 is compared against itself to find drift, but ch1 is shifted again, to get second difference.
+//Outputs:
+//r1 - reference signal from ch1
+//r2 - reference signal from ch2
+//r3 - difference of ch1-ch1, when phase stab is made from ch1 itself
+//r4 - difference of ch1-ch1, when other channel (ch2) is used for stabilization
+//r5 - memory of extremums for r3 difference
+//r6 - memory of extremums for r4 difference
+//r7 - drifts estimated by first method
+//r8 - drifts estimated by second method
+
+clear_variables();
+
+//inputs
+maxFreq = 10;//filtering frequency, set 0 to get result without filter
+repetitions = 10;//number of measurements to be made
+pauseMeas = 2;//seconds, pause between measurements
+
+
+T=WINDOW(ch1);
+N=count(ch1);
+
+acquire(1, base1, 2, base2);
+r1 = base1;
+
+allExtremums = signal(1, repetitions, false);
+r5 = allExtremums;
+r6 = allExtremums;
+r7 = allExtremums;
+r8 = allExtremums;
+r5 = 0;
+r6 = 0;
+r7 = 0;
+r8 = 0;
+
+for (ia = 0; ia < repetitions; ia = ia +1)
+{
+	  acquire(1, back1, 2, back2);
+	  r2 = back1;
+	  (dt)=difference2(back1, base1);
+	  r7[ia] = dt;
+	  tempSig = push2(back1,dt);
+	  
+	  if (maxFreq > 0)
+	  {
+		    differSignal = lf(tempSig- base1, maxFreq, 1.5*maxFreq, -6);
+	  }
+	  else
+	  {
+		    differSignal = tempSig - base1;
+	  }
+	  r3 = differSignal;
+	  pos = 0;
+	  maxVal = max(differSignal, pos);
+	  minVal = -min(differSignal, pos);
+	  if (maxVal > minVal)
+	  {
+		    r5[ia] = maxVal;
+	  }
+	  else
+	  {
+		    r5[ia] = minVal;
+	  }
+
+		  
+	  (dt)=difference2(back2, base2);
+	  r8[ia] = dt;
+	  tempSig = push2(back1,dt);
+	  if (maxFreq > 0)
+	  {
+		    differSignal = lf(tempSig- base1, maxFreq, 1.5*maxFreq, -6);
+	  }
+	  else
+	  {
+		    differSignal = tempSig - base1;
+	  }
+	  r4 = differSignal;
+	  pos = 0;
+	  maxVal = max(differSignal, pos);
+	  minVal = -min(differSignal, pos);
+	  if (maxVal > minVal)
+	  {
+		    r6[ia] = maxVal;
+	  }
+	  else
+	  {
+		    r6[ia] = minVal;
+	  }
+	  sleep(pauseMeas*1000);
+}
+	

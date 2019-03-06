@@ -1,0 +1,63 @@
+clear_variables();
+path = "C:\multitarget_data\day_8_test1_square2.sig";
+
+focusOnX = 25;
+focusOnY = -12;
+
+totalSignals = sig_get_count(path);
+d = 0.12;
+c = 0.3;
+const = 0.1;//regularization constant for regularization of form areg = a*/(|a|^2 + const)
+
+displace = 6 + 30*8;//signal index, signals start from 6th index
+
+
+testSig = sig_read(path, displace);
+t = window(testSig);
+n = count(testSig);
+
+l0 = sqrt(focusOnX*focusOnX+ focusOnY*focusOnY);
+l1 = sqrt(focusOnX*focusOnX+ (focusOnY - d)*(focusOnY - d));
+l2 = sqrt(focusOnX*focusOnX+ (focusOnY - 2*d)*(focusOnY - 2*d));
+l3 = sqrt(focusOnX*focusOnX+ (focusOnY - 3*d)*(focusOnY - 3*d));
+
+out(l3,l2,l1,l0);
+
+tau0 = 0;
+tau1 = (l1 - l0)/0.3/t*n;//in points
+tau2 = (l2 - l0)/0.3/t*n;
+tau3 = (l3 - l0)/0.3/t*n;
+
+out(tau3,tau2,tau1,tau0);
+
+f = fft(testSig);
+ex1=f;
+dt = tau0;
+for(i=0;i<n/2+1;i=i+1){
+	  ex1[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+ex2=f;
+dt = tau1;
+for(i=0;i<n/2+1;i=i+1){
+	  ex2[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+ex3=f;
+dt = tau2;
+for(i=0;i<n/2+1;i=i+1){
+	  ex3[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+ex4=f;
+dt = tau3;
+for(i=0;i<n/2+1;i=i+1){
+	  ex4[i]=cos(2*pi()*i*dt/n)-j()*sin(2*pi()*i*dt/n);
+}
+
+
+r1 = sig_read(path, displace) - sig_read(path, displace-8);
+spectrum = fft(r1);
+divideBy = ex1 + ex2 + ex3 + ex4;
+r2 = ifft(divi(spectrum*conj(divideBy), const + mag(divideBy)*mag(divideBy)));
+r3 = ifft(spectrum*ex4);//control

@@ -1,0 +1,202 @@
+//state defined as
+//x, vx, y, vy
+//state covariance matrix P is 4x4 matrix
+//Q is diagonal 4x4 process noise matrix
+Q11 = 0.5;
+Q22 = 0.5;
+Q33 = 0.5;
+Q44 = 0.5;
+
+//R is diagonal 2x2 measurement noise matrix
+Rr11 = 1;
+Rr12 = 0;
+Rr21 = 0;
+Rr22 = 1;
+
+//H is 2x4 observation matrix, since only two variables are observed
+
+//measurement z is 2x1 vector
+xm = 2;
+ym = 1.5;
+
+//previous state
+x = 1;
+y = 1;
+vx = 0;
+vy = 0;
+
+//previous covariance
+P11 = 4;
+P12 = 3;
+P13 = 2;
+P14 = 1;
+
+P21 = 4;
+P22 = 3;
+P23 = 2;
+P24 = 1;
+
+P31 = 4;
+P32 = 3;
+P33 = 2;
+P34 = 1;
+
+P41 = 4;
+P42 = 3;
+P43 = 2;
+P44 = 1;
+
+dt = 0.5;
+//prior state Xp = A*X;
+xp = x + vx*dt;
+yp = y + vy*dt;
+vxp = vx;
+vyp = vy;
+print_line("z = [", xm, " ", ym, "]'");
+print_line("X = [", x, " ",vx, " ", y, " ", vy,"]'");
+
+print_line("P = [", P11, " ", P12, " ", P13, " ", P14);
+print_line("        ", P21, " ", P22, " ", P23, " ", P24);
+print_line("        ", P31, " ", P32, " ", P33, " ", P34);
+print_line("        ", P41, " ", P42, " ", P43, " ", P44,"]");
+
+print_line("Xp = [", xp, " ",vxp, " ", yp, " ", vyp,"]'");
+
+//Pp = A*P*A';
+Ptemp11 = P11 + P12*dt;
+Ptemp12 = P12;
+Ptemp13 = P13 + P14*dt;
+Ptemp14 = P14;
+
+Ptemp21 = P21 + P22*dt;
+Ptemp22 = P22;
+Ptemp23 = P23 + P24*dt;
+Ptemp24 = P24;
+
+Ptemp31 = P31 + P32*dt;
+Ptemp32 = P32;
+Ptemp33 = P33 + P34*dt;
+Ptemp34 = P34;
+
+Ptemp41 = P41 + P42*dt;
+Ptemp42 = P42;
+Ptemp43 = P43 + P44*dt;
+Ptemp44 = P44;
+
+Pp11 = Ptemp11 + Ptemp21*dt + Q11;
+Pp12 = Ptemp12 + Ptemp22*dt;
+Pp13 = Ptemp13 + Ptemp23*dt;
+Pp14 = Ptemp14 + Ptemp24*dt;
+
+Pp21 = Ptemp21;
+Pp22 = Ptemp22 + Q22;
+Pp23 = Ptemp23;
+Pp24 = Ptemp24;
+
+Pp31 = Ptemp31 + Ptemp41*dt;
+Pp32 = Ptemp32 + Ptemp42*dt;
+Pp33 = Ptemp33 + Ptemp43*dt + Q33;
+Pp34 = Ptemp34 + Ptemp44*dt;
+
+Pp41 = Ptemp41;
+Pp42 = Ptemp42;
+Pp43 = Ptemp43;
+Pp44 = Ptemp44 + Q44;
+
+print_line("Pp = [", Pp11, " ", Pp12, " ", Pp13, " ", Pp14);
+print_line("         ", Pp21, " ", Pp22, " ", Pp23, " ", Pp24);
+print_line("         ", Pp31, " ", Pp32, " ", Pp33, " ", Pp34);
+print_line("         ", Pp41, " ", Pp42, " ", Pp43, " ", Pp44,"]");
+
+//Innovation Inn=z-H*Xp
+xinnov = xm - xp;
+yinnov = ym - yp;
+
+//measurement prediction covariance S = H*Pp*H'  + R
+Ptemp11 = Pp11;
+Ptemp12 = Pp13;
+Ptemp21 = Pp21;
+Ptemp22 = Pp23;
+Ptemp31 = Pp31;
+Ptemp32 = Pp33;
+Ptemp41 = Pp41;
+Ptemp42 = Pp43;
+
+S11 = Ptemp11 + Rr11;
+S12 = Ptemp12;
+S21 = Ptemp31;
+S22 = Ptemp32 + Rr22;
+
+print_line("S = [", S11, " ", S12);
+print_line("        ", S21, " ", S22, "]");
+
+//Kalman gain K = Pp * H' * inv(S);
+detS = S11*S22 - S12*S21;
+invS11 = S22/detS;
+invS12 = -S12/detS;
+invS21 = -S21/detS;
+invS22 = S11/detS;
+
+tempMat11 = invS11;
+tempMat12 = invS12;
+tempMat21 = 0;
+tempMat22 = 0;
+tempMat31 = invS21;
+tempMat32 = invS22;
+tempMat41 = 0;
+tempMat42 = 0;
+
+K11 = Pp11*tempMat11 + Pp13*tempMat31;
+K12 = Pp11*tempMat12 + Pp13*tempMat32;
+K21 = Pp21*tempMat11 + Pp23*tempMat31;
+K22 = Pp21*tempMat12 + Pp23*tempMat32;
+K31 = Pp31*tempMat11 + Pp33*tempMat31;
+K32 = Pp31*tempMat12 + Pp33*tempMat32;
+K41 = Pp41*tempMat11 + Pp43*tempMat31;
+K42 = Pp41*tempMat12 + Pp43*tempMat32;
+
+print_line("K = [", K11, " ", K12);
+print_line("        ", K21, " ", K22);
+print_line("        ", K31, " ", K32);
+print_line("        ", K41, " ", K42,"]");
+
+
+//Xnew = Xp + K * Inn; //new state
+xnew = xp + K11*xinnov + K12*yinnov;
+vxnew = vxp + K21*xinnov + K22*yinnov;
+ynew = yp + K31*xinnov+ K32*yinnov;
+vynew = vyp + K41*xinnov + K42*yinnov;
+
+print_line("X = [", xnew, " ",vxnew, " ", ynew, " ", vynew,"]'");
+
+//Pnew = Pp - K * H * Pp;//new covariance
+tempMat11 = Pp11;
+tempMat12 = Pp12;
+tempMat13 = Pp13;
+tempMat14 = Pp14;
+tempMat21 = Pp31;
+tempMat22 = PP32;
+tempMat23 = Pp33;
+tempMat24 = PP34;
+
+Pnew11 = Pp11 - (K11*tempMat11 + K12*tempMat21);
+Pnew12 = Pp12 - (K11*tempMat12 + K12*tempMat22);
+Pnew13 = Pp13 - (K11*tempMat13 + K12*tempMat23);
+Pnew14 = Pp14 - (K11*tempMat14 + K12*tempMat24);
+Pnew21 = Pp21 - (K21*tempMat11 + K22*tempMat21);
+Pnew22 = Pp22 - (K21*tempMat12 + K22*tempMat22);
+Pnew23 = Pp23 - (K21*tempMat13 + K22*tempMat23);
+Pnew24 = Pp24 - (K21*tempMat14 + K22*tempMat24);
+Pnew31 = Pp31 - (K31*tempMat11 + K32*tempMat21);
+Pnew32 = Pp32 - (K31*tempMat12 + K32*tempMat22);
+Pnew33 = Pp33 - (K31*tempMat13 + K32*tempMat23);
+Pnew34 = Pp34 - (K31*tempMat14 + K32*tempMat24);
+Pnew41 = Pp41 - (K41*tempMat11 + K42*tempMat21);
+Pnew42 = Pp42 - (K41*tempMat12 + K42*tempMat22);
+Pnew43 = Pp43 - (K41*tempMat13 + K42*tempMat23);
+Pnew44 = Pp44 - (K41*tempMat14 + K42*tempMat24);
+
+print_line("P = [", Pnew11, " ", Pnew12, " ", Pnew13, " ", Pnew14);
+print_line("       ", Pnew21, " ", Pnew22, " ", Pnew23, " ", Pnew24);
+print_line("       ", Pnew31, " ", Pnew32, " ", Pnew33, " ", Pnew34);
+print_line("       ", Pnew41, " ", Pnew42, " ", Pnew43, " ", Pnew44,"]");

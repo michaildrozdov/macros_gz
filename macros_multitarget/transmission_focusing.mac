@@ -1,0 +1,32 @@
+path = "C:\multitarget_data\day_8_test1_square2.sig";
+
+totalSignals = sig_get_count(path);
+d = 0.11;
+c = 0.3;
+const = 0.1;//regularization constant for regularization of form areg = a*/(|a|^2 + const)
+
+displace = 6 + 27*8;//signal index, signals start from 6th index
+
+
+testSig = sig_read(path, displace);
+T = window(testSig);
+N = count(testSig);
+
+df = 1/T;
+omegas = fft(testSig);
+for (ka = 0; ka < N/2 + 1; ka = ka + 1)
+{
+	  omegas[ka] = 2*pi()*df*ka;
+}
+
+r4 = mag(omegas);
+for (focusOn = -1; focusOn < 1; focusOn = focusOn + 1)
+{
+	  tau = d*sin(focusOn*pi()/180)/c;
+	  r1 = sig_read(path, displace) - sig_read(path, displace-8);
+	  spectrum = fft(r1);
+	  regularization =  divi(cos(mag(omegas)*tau)*cos(mag(omegas)*tau/2), cos(mag(omegas)*tau)*cos(mag(omegas)*tau/2)*cos(mag(omegas)*tau)*cos(mag(omegas)*tau/2) + const);
+	  r2 = ifft(spectrum*regularization);
+	  print_line("Current angle ", focusOn);
+	  pause();
+}

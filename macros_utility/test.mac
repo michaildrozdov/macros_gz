@@ -1,0 +1,3 @@
+mt = matrix(4,4);
+mt = 0;
+col = get_matrix_row(mt, 0);
