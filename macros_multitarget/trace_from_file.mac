@@ -366,6 +366,10 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    set_matrix_row(currentSignal, ka, w*sig_read(saveTo, disp + ind1*sigsInPeriod + ka + 8));
 	  }
 	  
+	  loadingTime = time();
+	  loadingDuration = loadingTime - before;
+	  out(loadingDuration);
+	  
 	  ffilt1 = 4;//GHz
 	  ffilt2 = 4.5;//GHz
 	  if (useRGA)
@@ -376,17 +380,17 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      currentFrame = get_matrix_row(currentSignal, ka) - get_matrix_row(meanValues, ka);
 			      set_label(currentFrame,T,"nS","mV");
 			      currentFrame = ifft(fft(currentFrame)*fft(extendedKernel));
-			      r9 = currentFrame;
-			      //currentFrame = lf(currentFrame, ffilt1,ffilt2,-6);
+			      //r9 = currentFrame;
+			      //removed before currentFrame = lf(currentFrame, ffilt1,ffilt2,-6);
 			      currentDeviations = sqrt(get_matrix_row(stdValues, ka));
-			      set_label(currentDeviations,T,"nS","mV");
-			      r14 = currentDeviations;
-			      temp = get_matrix_row(currentSignal, ka);
-			      set_label(temp, T, "ns", "mV");
-			      r15 = temp;
-			      temp = get_matrix_row(meanValues, ka);
-			      set_label(temp, T, "ns", "mV");
-			      r16 = temp;
+			      //set_label(currentDeviations,T,"nS","mV");
+			      //r14 = currentDeviations;
+			      //temp = get_matrix_row(currentSignal, ka);
+			      //set_label(temp, T, "ns", "mV");
+			      //r15 = temp;
+			      //temp = get_matrix_row(meanValues, ka);
+			      //set_label(temp, T, "ns", "mV");
+			      //r16 = temp;
 			      
 			      currentMask = currentDeviations;
 			      currentMask = 0;
@@ -407,19 +411,19 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 
 			      currentMask = ifft(fft(currentMask)*fft(extendedKernel));
 			      currentDeviations = learningRate*(1-currentMask)*currentFrame*currentFrame + (1 - learningRate*(1-currentMask))*currentDeviations*currentDeviations;
-			      r11 = sqrt(currentDeviations);
+			      //r11 = sqrt(currentDeviations);
 			      currentDeviations = ifft(fft(currentDeviations)*fft(extendedKernel));
 			      set_matrix_row(meanValues, ka, learningRate*(1-currentMask)*get_matrix_row(currentSignal, ka) + (1 -  learningRate*(1-currentMask))*get_matrix_row(meanValues, ka));
 			      //set_matrix_row(meanValues, ka, learningRate*get_matrix_row(currentSignal, ka) + (1 -  learningRate)*get_matrix_row(meanValues, ka));
 			      
-			      temp = get_matrix_row(meanValues, ka);
-			      set_label(temp, T, "ns", "mV");
-			      r12 = temp;
+			      //temp = get_matrix_row(meanValues, ka);
+			      //set_label(temp, T, "ns", "mV");
+			      //r12 = temp;
 			      set_matrix_row(meanSignal, ka, get_matrix_row(meanValues, ka));
 			      set_matrix_row(masks, ka, currentMask);
-			      r10 = currentMask;
+			      //r10 = currentMask;
 			      set_matrix_row(stdValues, ka, currentDeviations);
-			      r13 = sqrt(currentDeviations);
+			      //r13 = sqrt(currentDeviations);
 			      //pause();
 		    }
 		    
@@ -447,6 +451,9 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 
 	  //End of Signal acquisition
 	  
+	  backSubtractionTime = time();
+	  backSubtracionDuration = backSubtractionTime - loadingTime;
+	  out(backSubtracionDuration);
 	  
 	  //Difference signal calculation
 	 
@@ -485,17 +492,20 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      curPower = get_matrix_row(powerRaw,ka);
 			      set_matrix_row(differenceSignal, ka,lf(cur - mea,ffilt1,ffilt2,-6)/(push(curPower,slidingWindowN/2) + 0.5));
 		    }
-		    tempNormal = get_matrix_row(differenceSignal, ka);
-		    set_label(tempNormal,T,"nS","mV");
+		    //tempNormal = get_matrix_row(differenceSignal, ka);
+		    //set_label(tempNormal,T,"nS","mV");
 
-		    sp = fft(tempNormal);
-		    longSpectrumConst = 0;
-		    insert(sp,0,N/2-2,longSpectrumConst,0);
+		    //sp = fft(tempNormal);
+		    //longSpectrumConst = 0;
+		    //insert(sp,0,N/2-2,longSpectrumConst,0);
 		    
-		    set_matrix_row(longDifference, ka, ifft(longSpectrumConst));
+		    //set_matrix_row(longDifference, ka, ifft(longSpectrumConst));
 	  }
 	  //End of Difference signal calculation
-
+	  
+	  longDifferenceTime = time();
+	  longDifferenceDuration = longDifferenceTime - backSubtractionTime;
+	  out(longDifferenceDuration);
 
 	  //Power calculation
 	  sigPower = tempNormal;
@@ -585,8 +595,10 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 	  }
 
 
-	  time_mark1 = time()-before;
-	  out(time_mark1);
+	  powerCalcTime = time();
+	  powerCalcDuration = powerCalcTime - longDifferenceTime;
+	  out(powerCalcDuration);
+	  
 	  imageMatrix = 0;
 	  distanceAngleSpace = 0;
 	  targetsFound = 0;
@@ -700,7 +712,28 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    
 		    //Building delay-angle space
 		    //thresholdValue = 1000;
-
+		    
+		    useNew = true;
+		    if (useNew)
+		    {
+		    for (angle = 0; angle < anglesNum; angle = angle + 1)
+		    {
+			      delayPerAntenna = d/c*N/T*sin((angle*angleSpaceStep-45)*pi()/180);
+			      for (ka = 0; ka < 8; ka = ka + 1)
+			      {
+					displace = (ka-3)*delayPerAntenna;
+					tempNormal = get_matrix_row(powerWithThreshold, ka);
+					
+					set_label(tempNormal,T,"nS","mV");
+					tempNormal = differ(tempNormal);//to find steepest front
+					
+					set_matrix_row(distanceAngleSpace, angle, get_matrix_row(distanceAngleSpace, angle) + push2(tempNormal, displace)/160);
+			      }
+		    }
+		    }
+		    useOld = false;
+		    if (useOld)
+		    {
 		    for (distance = 0; distance < N; distance = distance + skipSize)
 		    {
 			      
@@ -749,7 +782,12 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      }
 
 		    }
+		    }
 		    //End Building delay-angle space
+		    
+		    buildingDelayAngleTime = time();
+		    buildingDelayAngleDuration = buildingDelayAngleTime - powerCalcTime;
+		    out(buildingDelayAngleDuration);
 		    
 		    //Building threshold array
 		    testArray = get_matrix_row(distanceAngleSpace, (anglesNum-1)/2);
@@ -989,12 +1027,15 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 
 	  }
 		    
-	  draw(distanceAngleSpace);
-	  //draw(imageMatrix);
+	  //draw(distanceAngleSpace);
+	  draw(imageMatrix);
 
 	  
-	  time_mark2 = time()-before;
-	  out(time_mark2);
+	  leftProcessing = time()-buildingDelayAngleTime;
+	  out(leftProcessing);
+	  
+	  totalProcessing = time() - before;
+	  out(totalProcessing);
 	  
 	  //pause();
 	  
