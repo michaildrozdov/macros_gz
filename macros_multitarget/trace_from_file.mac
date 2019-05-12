@@ -1,5 +1,7 @@
 clear_variables();
 useRGA = true;
+outputTo = "C:\multitarget_data\coords_output_two.sig";
+outputCoordinates = true;
 //Initialization
 bestMaximum = 0;
 bestxx = 0;
@@ -11,7 +13,7 @@ meanCoef = 0.0;//how much of accumulated background is used in next frame, 0 - m
 backAt = 32;//which frame should be used as a background, when loading from file
 startAt = 0;//at which frame to start, when loading from file
 endAt = 1000;//at which frame to end, when loading from file
-skipSize = 2;//how many points are skipped, while searching for targets in delay-angle space.
+skipSize = 1;//how many points are skipped, while searching for targets in delay-angle space.
 //Smaller number means finer search, but longer calculation. Minimum is 1 - each point will be checked
 
 passSize = 4;//if there is gap of lower than threshold values between two regions of higher than threshold values,
@@ -73,6 +75,12 @@ params3 = sig_read(saveTo,2);
 params4 = sig_read(saveTo,3);
 params5 = sig_read(saveTo,4);
 params6 = sig_read(saveTo,5);
+
+if (outputCoordinates)
+{
+	  sig_add(outputTo, params1);
+	  sig_delete_all(outputTo);
+}
 
 startAngle = params1[0];
 endAngle = params2[0];
@@ -884,6 +892,8 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 		    bestMaximum = 0;
 		    bestxx = 0;
 		    bestyy = 0;
+		    coordinatesArray = signal(1,64,false);
+		    coordinatesArray = -100;
 		    for (ia = 0; ia < targetsFound; ia = ia + 1)
 		    {
 			      curDelay = targetsUsedDelay[ia];
@@ -915,6 +925,10 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      x = AA*cos((90-curAngle)*pi()/180);
 			      y = AA*sin((90-curAngle)*pi()/180);
 			      ////print_line("Coordinates are: x ", x, ", y ", y);
+			      xindex = ia*2;
+			      yindex = ia*2+1;
+			      coordinatesArray[xindex] = r;
+			      coordinatesArray[yindex] = curAngle;
 			      
 			      //if (curMax*curDispersion > bestMaximum)
 			      if (curDispersion > bestMaximum)
@@ -955,6 +969,10 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 			      
 			      
 		    }
+		    if (outputCoordinates)
+		    {
+			      sig_add(outputTo, coordinatesArray);
+		    }
 		    
 		    xes[currentFrame] = bestxx;
 		    yes[currentFrame] = bestyy;
@@ -971,8 +989,8 @@ for (ind1 = startAt; ind1 < endAt; ind1 = ind1 + 1)
 
 	  }
 		    
-	  //draw(distanceAngleSpace);
-	  draw(imageMatrix);
+	  draw(distanceAngleSpace);
+	  //draw(imageMatrix);
 
 	  
 	  time_mark2 = time()-before;
