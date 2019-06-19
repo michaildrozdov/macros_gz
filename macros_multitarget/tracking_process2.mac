@@ -1,0 +1,84 @@
+() = tracking_process2(timestamps, x11, x21, x31, x41, p11, p21, p31, p41, p12, p22, p32, p42, p13, p23, p33, p43, p14, p24, p34, p44, thresholds, ages, numOfTracks, maxTracks, rData, aData, isUsedData, isMatchedData, idsData, numOfData, currentTime)
+{
+	  out(numOfTracks);
+	  timestampso = timestamps;
+	  
+	  //list of gated tracks
+	  maxNumGated = 20;
+	  
+	  numGated = 0;
+	  
+	  rDataGated = signal(1, maxNumGated, false);//array of distances
+	  aDataGated = signal(1, maxNumGated, false);//array of angles
+	  isUsedDataGated = signal(1, maxNumGated, false);
+	  isMatchedDataGated = signal(1, maxNumGated, false);
+	  idsDataGated = signal(1, maxNumGated, false);
+	  
+	  numOtherMatches = 0;
+	  
+	  rDataOtherMatches = signal(1, maxNumGated, false);//array of distances
+	  aDataOtherMatches = signal(1, maxNumGated, false);//array of angles
+	  isUsedDataOtherMatches = signal(1, maxNumGated, false);
+	  isMatchedDataOtherMatches = signal(1, maxNumGated, false);
+	  idsDataOtherMatches = signal(1, maxNumGated, false);
+	  
+
+	  //geometry parameters
+	  arrayD = 12;//distance between centers of arrays
+    
+	  //tracking parameters
+	  dt = 1;//s
+	  maxVel = 2;//m/s
+	  minVel = 0.1;//m/s
+	  kMatches = 1;//how many updated Kalman states can be created from single one with measurements close enough to estimation
+	  trueTrackThreshold = 0.2;//match factor defining, what is considered true track, less is for less false tracks
+	  removeTrackThreshold = 5;//factor defining, threshold for track removal, less is for faster tracks removal
+	  minAgeToDisplayRadial = 2;//track with mostly radial movement needs to be updated for this amount of frames to be displayed
+	  minAgeToDisplayTangental = 3;//track with mostly tangental movement needs to be updated for this amount of frames to be displayed
+
+	  matchingVelocityThreshold = 0.5;//0.8 means within 80%
+	  matchingPositionThreshold = 3;
+
+	  //TODO need to adapt threshold on the run to limit number of active tracks
+
+	  //R = 5*eye(2);//sensor noise for px, vx, py and vy, should optimize this, smaller number means believing measurement more than model
+	  //R(2,2) = 10;
+	  R = matrix(2,2);
+	  R = 0;
+	  set_matrix(R,0,0,5);
+	  set_matrix(R,1,1,10);
+	  
+	  //Q = 0.05*eye(6);//process noise for Kalman filter estimation, smaller number means believing model more than measurement
+	  Q = matrix(4,4);
+	  Q  = 0;
+	  set_matrix(Q,0,0,0.05);
+	  set_matrix(Q,1,1,0.05);
+	  set_matrix(Q,2,2,0.05);
+	  set_matrix(Q,3,3,0.05);
+	  //set_matrix(Q,4,4,0.05);
+	  //set_matrix(Q,5,5,0.05);
+	  
+	  //Pinit = 5*eye(6);//initial covariance matrix for track, smaller means we believe first measurement more
+	  //Pinit(1,1) = 2;//smaller value for distance
+	  Pinit = matrix(4,4);
+	  Pinit = 0;
+	  set_matrix(Pinit,0,0,2);
+	  set_matrix(Pinit,1,1,5);
+	  set_matrix(Pinit,2,2,5);
+	  set_matrix(Pinit,3,3,5);
+	  //set_matrix(Pinit,4,4,5);
+	  //set_matrix(Pinit,5,5,5);
+	  
+	  //H is 2x4 observation matrix, since only two variables are observed
+	  H = matrix(2,4);
+	  H = 0;
+	  set_matrix(H,0,0,1);
+	  set_matrix(H,1,2,1);
+	  
+	  //end of tracking parameters (but some are hidden)
+
+
+	  sqMaxVel = maxVel*maxVel;//square of velocity for position comparison
+	  sqMinVel = minVel*minVel;//square of velocity for position comparison 
+      
+}

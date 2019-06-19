@@ -1,0 +1,132 @@
+maxTracks = 40;
+numOfTracks = 0;
+
+maxData = 40;
+numOfData= 0;
+currentTime = 0;
+
+timestamps = signal(1, maxTracks, false);
+
+//state of tracks
+x11 = signal(1, maxTracks, false);
+x21 = signal(1, maxTracks, false);
+x31 = signal(1, maxTracks, false);
+x41 = signal(1, maxTracks, false);
+
+//covariances of tracks
+p11 = signal(1, maxTracks, false);
+p21 = signal(1, maxTracks, false);
+p31 = signal(1, maxTracks, false);
+p41 = signal(1, maxTracks, false);
+
+p12 = signal(1, maxTracks, false);
+p22 = signal(1, maxTracks, false);
+p32 = signal(1, maxTracks, false);
+p42 = signal(1, maxTracks, false);
+
+p13 = signal(1, maxTracks, false);
+p23 = signal(1, maxTracks, false);
+p33 = signal(1, maxTracks, false);
+p43 = signal(1, maxTracks, false);
+
+p14 = signal(1, maxTracks, false);
+p24 = signal(1, maxTracks, false);
+p34 = signal(1, maxTracks, false);
+p44 = signal(1, maxTracks, false);
+
+thresholds = signal(1, maxTracks, false);
+ages = signal(1, maxTracks, false);
+isValidatedArray = signal(1, maxTracks, false);
+
+rData = signal(1, maxData, false);//array of distances
+aData = signal(1, maxData, false);//array of angles
+isUsedData = signal(1, maxData, false);
+isMatchedData = signal(1, maxData, false);
+idsData = signal(1, maxData, false);
+
+timestamps = 0;
+for (la = 0; la < 5; la = la + 1)
+{
+currentTime = la;
+out(numOfTracks);
+rData = 10 + la;
+aData = 5;
+isUsedData = 0;
+isMatchedData = 0;
+idsData = 1;
+
+numOfData = 1;
+
+() = tracking_process(timestamps, x11, x21, x31, x41, p11, p21, p31, p41, p12, p22, p32, p42, p13, p23, p33, p43, p14, p24, p34, p44, thresholds, ages, numOfTracks, maxTracks, rData, aData, isUsedData, isMatchedData, idsData, numOfData, currentTime);
+
+//(timestamps, x11, x21, x31, x41, p11, p21, p31, p41, p12, p22, p32, p42, p13, p23, p33, p43, p14, p24, p34, p44, thresholds, numOfTracks) =
+//process_measurements(timestamps, x11, x21, x31, x41, p11, p21, p31, p41, p12, p22, p32, p42, p13, p23, p33, p43, p14, p24, p34, p44, thresholds, numOfTracks, maxTracks);
+out(numOfTracks);
+
+trueTrackThreshold = 0.2;
+maxVel = 2;//m/s
+minVel = 0.1;//m/s
+minAgeToDisplayRadial = 2;//track with mostly radial movement needs to be updated for this amount of frames to be displayed
+minAgeToDisplayTangental = 3;//track with mostly tangental movement needs to be updated for this amount of frames to be displayed
+print_line(la);
+for (tr = 0; tr < numOfTracks; tr = tr + 1)
+{
+	  print_line("Track ", x11[tr], " ", x31[tr]);
+        //currentTrack = currentTracks(tr);
+      
+        //currentThresholdRatio = currentTrack.threshold/trueTrackThreshold
+	  if (thresholds[tr]/ages[tr] > trueTrackThreshold)
+	  {
+		    print_line("Track didn't pass by precision ", thresholds[tr]);
+		    //ageParam = currentTrack.threshold/currentTrack.age
+		    goto endofloop;
+	  }
+
+
+	  //r = state(1);
+	  //dr = state(2);
+	  //dTh = state(5)*pi/180;//1 degree
+	  //angle = state(4)*pi/180;
+
+	  angle = x31[tr]*pi()/180;
+	  x = x11[tr]*sin(angle);
+	  y = x11[tr]*cos(angle);
+	  dTh = x41[tr]*pi()/180;
+
+	  vx = x21[tr]*sin(angle) + x11[tr]*dTh*cos(angle);
+	  vy = x21[tr]*cos(angle) - x11[tr]*dTh*sin(angle);
+
+	  vel = sqrt(vx*vx + vy*vy);
+
+
+	  if (vel < minVel)
+	  {
+		    goto endofloop;
+	  }
+
+	  if (vel > maxVel)
+	  {
+		    goto endofloop;
+	  }
+
+	  if (ages[tr] < minAgeToDisplayRadial)
+	  {
+		    goto endofloop;
+          }
+      
+      
+	  //tangental only movement can be easily faked by several stationary reflections, so should be registered after more updates
+	  if (abs(x21[tr]) < 0.5*x11[tr]*tan(x31[tr]*pi()/180))//tangental movement is twice faster than radial
+	  {
+		    if (ages[tr] < minAgeToDisplayTangental)
+		    {
+			      goto endofloop;
+		    }
+	  }
+	  print_line("Have valid track ", x, " ", y);
+	  endofloop:
+	  print_line("end of loop");
+}
+print_line("");
+print_line("");
+}

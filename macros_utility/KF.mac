@@ -7,11 +7,29 @@ Q22 = 0.5;
 Q33 = 0.5;
 Q44 = 0.5;
 
+Q = matrix(4,4);
+Q = 0;
+set_matrix(Q, 0, 0, 0.5);
+set_matrix(Q, 1, 1, 0.5);
+set_matrix(Q, 2, 2, 0.5);
+set_matrix(Q, 3, 3, 0.5);
+
 //R is diagonal 2x2 measurement noise matrix
+R = matrix(2,2);
+R = 0;
+set_matrix(R, 0, 0, 1);
+set_matrix(R, 1, 1, 1);
+
 Rr11 = 1;
 Rr12 = 0;
 Rr21 = 0;
 Rr22 = 1;
+
+Rr = matrix(2,2);
+set_matrix(Rr, 0, 0, 1);
+set_matrix(Rr, 0, 1, 0);
+set_matrix(Rr, 1, 0, 0);
+set_matrix(Rr, 1, 1, 1);
 
 //H is 2x4 observation matrix, since only two variables are observed
 
@@ -19,11 +37,21 @@ Rr22 = 1;
 xm = 2;
 ym = 1.5;
 
+z = matrix(2,1);
+set_matrix(z, 0, 0, 2);
+set_matrix(z, 1, 0, 1.5);
+
 //previous state
 x = 1;
 y = 1;
 vx = 0;
 vy = 0;
+
+xprev = matrix(4,1);
+set_matrix(xprev, 0, 0, 1);
+set_matrix(xprev, 1, 0, 0);
+set_matrix(xprev, 2, 0, 1);
+set_matrix(xprev, 3, 0, 0);
 
 //previous covariance
 P11 = 4;
@@ -46,7 +74,53 @@ P42 = 3;
 P43 = 2;
 P44 = 1;
 
+P = matrix(4,4);
+set_matrix(P, 0, 0, 4);
+set_matrix(P, 0, 1, 3);
+set_matrix(P, 0, 2, 2);
+set_matrix(P, 0, 3, 1);
+
+set_matrix(P, 1, 0, 4);
+set_matrix(P, 1, 1, 3);
+set_matrix(P, 1, 2, 2);
+set_matrix(P, 1, 3, 1);
+
+set_matrix(P, 2, 0, 4);
+set_matrix(P, 2, 1, 3);
+set_matrix(P, 2, 2, 2);
+set_matrix(P, 2, 3, 1);
+
+set_matrix(P, 3, 0, 4);
+set_matrix(P, 3, 1, 3);
+set_matrix(P, 3, 2, 2);
+set_matrix(P, 3, 3, 1);
+
+
 dt = 0.5;
+
+//process matrix
+A = matrix(4,4);
+set_matrix(A, 0, 0, 1);
+set_matrix(A, 0, 1, dt);
+set_matrix(A, 0, 2, 0);
+set_matrix(A, 0, 3, 0);
+
+set_matrix(A, 1, 0, 0);
+set_matrix(A, 1, 1, 1);
+set_matrix(A, 1, 2, 0);
+set_matrix(A, 1, 3, 0);
+
+set_matrix(A, 2, 0, 0);
+set_matrix(A, 2, 1, 0);
+set_matrix(A, 2, 2, 1);
+set_matrix(A, 2, 3, dt);
+
+set_matrix(A, 3, 0, 0);
+set_matrix(A, 3, 1, 0);
+set_matrix(A, 3, 2, 0);
+set_matrix(A, 3, 3, 1);
+
+
 //prior state Xp = A*X;
 xp = x + vx*dt;
 yp = y + vy*dt;
@@ -61,6 +135,13 @@ print_line("        ", P31, " ", P32, " ", P33, " ", P34);
 print_line("        ", P41, " ", P42, " ", P43, " ", P44,"]");
 
 print_line("Xp = [", xp, " ",vxp, " ", yp, " ", vyp,"]'");
+Xpmat = A*xprev;
+xp2 = get_matrix(Xpmat, 0,0);
+vxp2 = get_matrix(Xpmat, 1,0);
+yp2 = get_matrix(Xpmat, 2,0);
+vyp2 = get_matrix(Xpmat, 3,0);
+print_line("Xp2 = [", xp2, " ",vxp2, " ", yp2, " ", vyp2,"]'");
+
 
 //Pp = A*P*A';
 Ptemp11 = P11 + P12*dt;
@@ -103,6 +184,34 @@ Pp42 = Ptemp42;
 Pp43 = Ptemp43;
 Pp44 = Ptemp44 + Q44;
 
+Pp = A*P*transpose(A);
+Pp = Pp +Q;
+
+print_line("Pp = [", Pp11, " ", Pp12, " ", Pp13, " ", Pp14);
+print_line("         ", Pp21, " ", Pp22, " ", Pp23, " ", Pp24);
+print_line("         ", Pp31, " ", Pp32, " ", Pp33, " ", Pp34);
+print_line("         ", Pp41, " ", Pp42, " ", Pp43, " ", Pp44,"]");
+
+Pp11 = get_matrix(Pp,0,0);
+Pp12 = get_matrix(Pp,0,1);
+Pp13 = get_matrix(Pp,0,2);
+Pp14 = get_matrix(Pp,0,3);
+
+Pp21 = get_matrix(Pp,1,0);
+Pp22 = get_matrix(Pp,1,1);
+Pp23 = get_matrix(Pp,1,2);
+Pp24 = get_matrix(Pp,1,3);
+
+Pp31 = get_matrix(Pp,2,0);
+Pp32 = get_matrix(Pp,2,1);
+Pp33 = get_matrix(Pp,2,2);
+Pp34 = get_matrix(Pp,2,3);
+
+Pp41 = get_matrix(Pp,3,0);
+Pp42 = get_matrix(Pp,3,1);
+Pp43 = get_matrix(Pp,3,2);
+Pp44 = get_matrix(Pp,3,3);
+
 print_line("Pp = [", Pp11, " ", Pp12, " ", Pp13, " ", Pp14);
 print_line("         ", Pp21, " ", Pp22, " ", Pp23, " ", Pp24);
 print_line("         ", Pp31, " ", Pp32, " ", Pp33, " ", Pp34);
@@ -111,6 +220,13 @@ print_line("         ", Pp41, " ", Pp42, " ", Pp43, " ", Pp44,"]");
 //Innovation Inn=z-H*Xp
 xinnov = xm - xp;
 yinnov = ym - yp;
+
+H = matrix(2,4);
+H = 0;
+set_matrix(H,0,0,1);
+set_matrix(H,1,2,1);
+
+innov = z- H*xprev;
 
 //measurement prediction covariance S = H*Pp*H'  + R
 Ptemp11 = Pp11;
@@ -129,6 +245,15 @@ S22 = Ptemp32 + Rr22;
 
 print_line("S = [", S11, " ", S12);
 print_line("        ", S21, " ", S22, "]");
+
+S = H*Pp*transpose(H) + R;
+S11test = get_matrix(S,0,0);
+S21test = get_matrix(S,1,0);
+S12test = get_matrix(S,0,1);
+S22test = get_matrix(S,1,1);
+
+print_line("S = [", S11test, " ", S12test);
+print_line("        ", S21test, " ", S22test, "]");
 
 //Kalman gain K = Pp * H' * inv(S);
 detS = S11*S22 - S12*S21;
@@ -160,6 +285,22 @@ print_line("        ", K21, " ", K22);
 print_line("        ", K31, " ", K32);
 print_line("        ", K41, " ", K42,"]");
 
+K = PP*transpose(H)*inverse(S);
+K11test = get_matrix(K, 0,0);
+K12test = get_matrix(K, 0,1);
+K21test = get_matrix(K, 1,0);
+K22test = get_matrix(K, 1,1);
+K31test = get_matrix(K, 2,0);
+K32test = get_matrix(K, 2,1);
+K41test = get_matrix(K, 3,0);
+K42test = get_matrix(K, 3,1);
+
+print_line("K = [", K11test, " ", K12test);
+print_line("        ", K21test, " ", K22test);
+print_line("        ", K31test, " ", K32test);
+print_line("        ", K41test, " ", K42test,"]");
+
+
 
 //Xnew = Xp + K * Inn; //new state
 xnew = xp + K11*xinnov + K12*yinnov;
@@ -168,6 +309,14 @@ ynew = yp + K31*xinnov+ K32*yinnov;
 vynew = vyp + K41*xinnov + K42*yinnov;
 
 print_line("X = [", xnew, " ",vxnew, " ", ynew, " ", vynew,"]'");
+out(xprev,Xnew);
+Xupdated = xprev + K*innov;
+Xnew11 = get_matrix(Xupdated, 0,0);
+Xnew21 = get_matrix(Xupdated, 1,0);
+Xnew31 = get_matrix(Xupdated, 2,0);
+Xnew41 = get_matrix(Xupdated, 3,0);
+
+print_line("X = [", Xnew11, " ",Xnew21, " ", Xnew31, " ", Xnew41,"]'");
 
 //Pnew = Pp - K * H * Pp;//new covariance
 tempMat11 = Pp11;
@@ -195,6 +344,30 @@ Pnew41 = Pp41 - (K41*tempMat11 + K42*tempMat21);
 Pnew42 = Pp42 - (K41*tempMat12 + K42*tempMat22);
 Pnew43 = Pp43 - (K41*tempMat13 + K42*tempMat23);
 Pnew44 = Pp44 - (K41*tempMat14 + K42*tempMat24);
+
+print_line("P = [", Pnew11, " ", Pnew12, " ", Pnew13, " ", Pnew14);
+print_line("       ", Pnew21, " ", Pnew22, " ", Pnew23, " ", Pnew24);
+print_line("       ", Pnew31, " ", Pnew32, " ", Pnew33, " ", Pnew34);
+print_line("       ", Pnew41, " ", Pnew42, " ", Pnew43, " ", Pnew44,"]");
+
+Ppnew = Pp - K*H*Pp;
+
+Pnew11 = get_matrix(Ppnew, 0,0);
+Pnew12 = get_matrix(Ppnew, 0,1);
+Pnew13 = get_matrix(Ppnew, 0,2);
+Pnew14 = get_matrix(Ppnew, 0,3);
+Pnew21 = get_matrix(Ppnew, 1,0);
+Pnew22 = get_matrix(Ppnew, 1,1);
+Pnew23 = get_matrix(Ppnew, 1,2);
+Pnew24 = get_matrix(Ppnew, 1,3);
+Pnew31 = get_matrix(Ppnew, 2,0);
+Pnew32 = get_matrix(Ppnew, 2,1);
+Pnew33 = get_matrix(Ppnew, 2,2);
+Pnew34 = get_matrix(Ppnew, 2,3);
+Pnew41 = get_matrix(Ppnew, 3,0);
+Pnew42 = get_matrix(Ppnew, 3,1);
+Pnew43 = get_matrix(Ppnew, 3,2);
+Pnew44 = get_matrix(Ppnew, 3,3);
 
 print_line("P = [", Pnew11, " ", Pnew12, " ", Pnew13, " ", Pnew14);
 print_line("       ", Pnew21, " ", Pnew22, " ", Pnew23, " ", Pnew24);
