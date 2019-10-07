@@ -1,4 +1,4 @@
-() = tracking_process(timestamps, x11, x21, x31, x41, p11, p21, p31, p41, p12, p22, p32, p42, p13, p23, p33, p43, p14, p24, p34, p44, thresholds, ages, numOfTracks, maxTracks, rData, aData, isUsedData, isMatchedData, idsData, numOfData, currentTime)
+() = tracking_process_vel(timestamps, x11, x21, x31, x41, p11, p21, p31, p41, p12, p22, p32, p42, p13, p23, p33, p43, p14, p24, p34, p44, thresholds, ages, numOfTracks, maxTracks, rData, vData, aData, isUsedData, isMatchedData, idsData, numOfData, currentTime)
 {
 	  //out(numOfTracks);
 	  timestampso = timestamps;
@@ -9,6 +9,7 @@
 	  numGated = 0;
 	  
 	  rDataGated = signal(1, maxNumGated, false);//array of distances
+	  vDataGated = signal(1, maxNumGated, false);//array of Doppler velocities
 	  aDataGated = signal(1, maxNumGated, false);//array of angles
 	  isUsedDataGated = signal(1, maxNumGated, false);
 	  isMatchedDataGated = signal(1, maxNumGated, false);
@@ -43,10 +44,11 @@
 
 	  //R = 5*eye(2);//sensor noise for px, vx, py and vy, should optimize this, smaller number means believing measurement more than model
 	  //R(2,2) = 10;
-	  R = matrix(2,2);
+	  R = matrix(3,3);
 	  R = 0;
 	  set_matrix(R,0,0,5);
-	  set_matrix(R,1,1,10);
+	  set_matrix(R,1,1,5);
+	  set_matrix(R,2,2,10);
 	  
 	  //Q = 0.05*eye(6);//process noise for Kalman filter estimation, smaller number means believing model more than measurement
 	  Q = matrix(4,4);
@@ -69,12 +71,13 @@
 	  //set_matrix(Pinit,4,4,5);
 	  //set_matrix(Pinit,5,5,5);
 	  
-	  //H is 2x4 observation matrix, since only two variables are observed
-	  H = matrix(2,4);
+	  //H is 3x4 observation matrix, three variables are observed
+	  H = matrix(3,4);
 	  H = 0;
 	  set_matrix(H,0,0,1);
-	  set_matrix(H,1,2,1);
-
+	  set_matrix(H,1,1,1);
+	  set_matrix(H,2,2,1);
+	  
 	  sqMaxVel = maxVel*maxVel;//square of velocity for position comparison
 	  sqMinVel = minVel*minVel;//square of velocity for position comparison 
 	  
@@ -87,15 +90,14 @@
 		    temp1 = x11[tr];
 		    temp2 = x31[tr];
 		    //print_line("Examining track ", temp1, " ", temp2);
-		    AAtrack = (arrayD*arrayD - x11[tr]*x11[tr])/(2*(arrayD*cos((90-x31[tr])*pi()/180) - x11[tr]));
-		    xtrack = AAtrack*cos((90-x31[tr])*pi()/180);
-		    ytrack = AAtrack*sin((90-x31[tr])*pi()/180);
+		    
+		    xtrack = temp1*sin(temp2*pi()/180);
+		    ytrack = temp1*cos(temp2*pi()/180);
 
 		    for (dp=0; dp < numOfData; dp = dp + 1)
 		    {
-			      AA = (arrayD*arrayD - rData[dp]*rData[dp])/(2*(arrayD*cos((90-aData[dp])*pi()/180) - rData[dp]));
-			      x = AA*cos((90-aData[dp])*pi()/180);
-			      y = AA*sin((90-aData[dp])*pi()/180);
+			      x = rData[dp]*sin(aData[dp]*pi()/180);
+			      y = rData[dp]*cos(aData[dp]*pi()/180);
 
 			      distanceSq = (xtrack - x)*(xtrack - x) + (ytrack - y)*(ytrack - y);
 			      if (distanceSq < sqMaxVel*dt*dt)
@@ -103,6 +105,7 @@
 					if (numGated < maxNumGated)
 					{
 						  rDataGated[numGated] = rData[dp];
+						  vDataGated[numGated] = vData[dp];
 						  aDataGated[numGated] = aData[dp];
 						  isUsedDataGated[numGated]  = isUsedData[dp];
 						  isMatchedDataGated[numGated]  = isMatchedData[dp];
@@ -126,17 +129,15 @@
 		    while (g < numGated)
 		    {
 			      //datapoint = gated(g);
-			      AA = (arrayD*arrayD - rDataGated[g]*rDataGated[g])/(2*(arrayD*cos((90-aDataGated[g])*pi()/180) - rDataGated[g]));
-			      x = AA*cos((90-aDataGated[g])*pi()/180);
-			      y = AA*sin((90-aDataGated[g])*pi()/180);
+			      x = rDataGated[g]*sin(aDataGated[g]*pi()/180);
+			      y = rDataGated[g]*cos(aDataGated[g]*pi()/180);
 		  
 			      gg = g+1;
 			      while (gg < numGated)
 			      {
 					//datapoint2 = gated(gg);
-					AA = (arrayD*arrayD - rDataGated[gg]*rDataGated[gg])/(2*(arrayD*cos((90-aDataGated[gg])*pi()/180) - rDataGated[gg]));
-					x2 = AA*cos((90-aDataGated[gg])*pi()/180);
-					y2 = AA*sin((90-aDataGated[gg])*pi()/180);
+					x2 = rDataGated[gg]*sin(aDataGated[gg]*pi()/180);
+					y2 = rDataGated[gg]*cos(aDataGated[gg]*pi()/180);
 
 					dposSq = (x2 - x)*(x2 - x) + (y2 - y)*(y2 - y);
 					if (dposSq < matchingPositionThreshold*matchingPositionThreshold)
@@ -149,6 +150,7 @@
 						  {
 							    lastIndex = numGated - 1;
 							    rDataGated[gg] = rDataGated[lastIndex];
+							    vDataGated[gg] = vDataGated[lastIndex];
 							    aDataGated[gg] = aDataGated[lastIndex];
 							    isUsedDataGated[gg] = isUsedDataGated[lastIndex];
 							    isMatchedDataGated[gg] = isMatchedDataGated[lastIndex];
@@ -173,16 +175,17 @@
 			      //datapoint = gated(g);
 			      temp1 =  rDataGated[g];
 			      temp2 = aDataGated[g];
+			      temp3 = vDataGated[g];
 			      //print_line("Matching measurement ", temp1, " ", temp2);
-			      AA = (arrayD*arrayD - rDataGated[g]*rDataGated[g])/(2*(arrayD*cos((90-aDataGated[g])*pi()/180) - rDataGated[g]));
-			      x = AA*cos((90-aDataGated[g])*pi()/180);
-			      y = AA*sin((90-aDataGated[g])*pi()/180);
+			      x = rDataGated[g]*sin(aDataGated[g]*pi()/180);
+			      y = rDataGated[g]*cos(aDataGated[g]*pi()/180);
 		      
 			      //measurement z is 2x1 vector
 
-			      z = matrix(2,1);
+			      z = matrix(3,1);
 			      set_matrix(z, 0, 0, rDataGated[g]);
-			      set_matrix(z, 1, 0, aDataGated[g]);
+			      set_matrix(z, 1, 0, vDataGated[g]);
+			      set_matrix(z, 2, 0, aDataGated[g]);
 			
 			      //Kalman filter update below
 			      xprev = matrix(4,1);
@@ -531,14 +534,12 @@
 	  while (tr < numOfTracks)
 	  {
 		    tr2 = tr+1;
-		    AAtrack = (arrayD*arrayD - x11[tr]*x11[tr])/(2*(arrayD*cos((90-x31[tr])*pi()/180) - x11[tr]));
-		    xtrack = AAtrack*cos((90-x31[tr])*pi()/180);
-		    ytrack = AAtrack*sin((90-x31[tr])*pi()/180);
+		    xtrack = x11[tr]*sin(x31[tr]*pi()/180);
+		    ytrack = x11[tr]*cos(x31[tr]*pi()/180);
 		    while (tr2 < numOfTracks)
 		    {
-			      AAtrack2 = (arrayD*arrayD - x11[tr2]*x11[tr2])/(2*(arrayD*cos((90-x31[tr2])*pi()/180) - x11[tr2]));
-			      xtrack2 = AAtrack2*cos((90-x31[tr2])*pi()/180);
-			      ytrack2 = AAtrack2*sin((90-x31[tr2])*pi()/180);
+			      xtrack2 = x11[tr2]*sin(x31[tr2]*pi()/180);
+			      ytrack2 = x11[tr2]*os(x31[tr2]*pi()/180);
 			      dpos = sqrt((xtrack2 - xtrack)*(xtrack2 - xtrack) + (ytrack2 - ytrack)*(ytrack2 - ytrack));
 			      
 			      if (abs(x21[tr2]) < 0.01)

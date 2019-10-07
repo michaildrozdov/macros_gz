@@ -1,0 +1,141 @@
+clear_variables();
+useRGA = true;
+outputTo = "C:\multitarget_data\coords_output_two.sig";
+outputCoordinates = true;
+//Initialization
+bestMaximum = 0;
+bestxx = 0;
+bestyy = 0;
+showSignals = true;//update registers with current signals, if true
+stationaryBackground = false;//one signal is used as background
+calculateTargetSpace = true;//if false, only signals are acquired/loaded, but no other processing
+meanCoef = 0.0;//how much of accumulated background is used in next frame, 0 - means current - prev
+backAt = 32;//which frame should be used as a background, when loading from file
+startAt = 0;//at which frame to start, when loading from file
+endAt = 1000;//at which frame to end, when loading from file
+skipSize = 1;//how many points are skipped, while searching for targets in delay-angle space.
+//Smaller number means finer search, but longer calculation. Minimum is 1 - each point will be checked
+
+passSize = 4;//if there is gap of lower than threshold values between two regions of higher than threshold values,
+//it is ignored and two regions are joined to one target, if gap is less than this parameter
+
+arrayD = 12;//distance between centers of arrays
+maxVel = 1.5;//m/s
+deltaT = 2;//s expected duration between frames, will be updated
+
+thresholdValue = 200;//checked of power
+
+//Actual RGA parameters
+startingStd = 1000;//parameter, large value of standard deviation, if no initialization is present
+initFrames = 4;//parameter
+foregroundThreshold = 2.5;//parameter, if current value is 2.5 times stdev value or higher, it is foreground
+backgroundThreshold = 1;//parameter, if current value is 1 times stdev value or lower, it is foreground
+learningRate = 0.5;//parameter, starting learningRate, should reduce as measurement goes
+learningRateMult = 0.95;//metaparameter, how much of the learning rate it is left for next measurment
+learningRateFloor = 0.05;//metaparameter, lowest possible learning rate value, set to same value like learningRate for constant learning rate
+kernelSize = 7;//parameter, how much model values should be smoothed
+//end of RGA parameters
+
+//Tracking low level params
+maxTracks = 40;
+maxData = 40;
+
+numOfTracks = 0;
+timestamps = signal(1, maxTracks, false);
+
+//state of tracks
+x11 = signal(1, maxTracks, false);
+x21 = signal(1, maxTracks, false);
+x31 = signal(1, maxTracks, false);
+x41 = signal(1, maxTracks, false);
+
+//covariances of tracks
+p11 = signal(1, maxTracks, false);
+p21 = signal(1, maxTracks, false);
+p31 = signal(1, maxTracks, false);
+p41 = signal(1, maxTracks, false);
+
+p12 = signal(1, maxTracks, false);
+p22 = signal(1, maxTracks, false);
+p32 = signal(1, maxTracks, false);
+p42 = signal(1, maxTracks, false);
+
+p13 = signal(1, maxTracks, false);
+p23 = signal(1, maxTracks, false);
+p33 = signal(1, maxTracks, false);
+p43 = signal(1, maxTracks, false);
+
+p14 = signal(1, maxTracks, false);
+p24 = signal(1, maxTracks, false);
+p34 = signal(1, maxTracks, false);
+p44 = signal(1, maxTracks, false);
+
+thresholds = signal(1, maxTracks, false);
+ages = signal(1, maxTracks, false);
+isValidatedArray = signal(1, maxTracks, false);
+
+rData = signal(1, maxData, false);//array of distances
+aData = signal(1, maxData, false);//array of angles
+isUsedData = signal(1, maxData, false);
+isMatchedData = signal(1, maxData, false);
+idsData = signal(1, maxData, false);
+
+timestamps = 0;
+//end of tracking low level params
+
+//Tracking high level params
+trueTrackThreshold = 0.2;
+maxVel = 2;//m/s
+minVel = 0.1;//m/s
+minAgeToDisplayRadial = 4;//track with mostly radial movement needs to be updated for this amount of frames to be displayed
+minAgeToDisplayTangental = 6;//track with mostly tangental movement needs to be updated for this amount of frames to be displayed
+//end of tracking igh level params
+
+
+if (useRGA)
+{
+	thresholdValue = 5;  
+}
+pulseDuration = 2;//duration for integration, when calculating power from difference
+falloffDuration = 0.5;//duration of falloff in integration window, when calculating power from difference
+parametersNumber = 6;//when loading, omit first 6 signals, as those are parameters
+d = 0.13;//distance between antenna elements
+minDistance = rangestart;//rangeStart is given in params.mac
+if (minDistance < 0)
+{
+	  minDistance = 0;
+}
+distStep = 0.1;
+maxDistance = rangeend;
+
+//init of image matrix (where argets are displayed)
+imageSizeX = ceil((maxDistance - minDIstance)/distStep);
+imageSizeY = ceil((arrayD+18)/distStep);
+imageMatrix = matrix(imageSizeX, imageSizeY);
+imageMatrix = 0;
+//draw(imageMatrix);
+
+
+c = 0.3;//m/ns
+maxTheoreticalDelay = d/c + 0.1;
+timeStart = 268 - arrayD/c;//ns, t0
+timeStart = 286 - arrayD/c;//ns, t0, this is more apropriate based on results of actual measurements
+
+
+//if saveTo exists, parameters are read
+
+params1 = sig_read(saveTo,0);
+params2 = sig_read(saveTo,1);
+params3 = sig_read(saveTo,2);
+params4 = sig_read(saveTo,3);
+params5 = sig_read(saveTo,4);
+params6 = sig_read(saveTo,5);
+
+
+
+
+
+
+
+
+
