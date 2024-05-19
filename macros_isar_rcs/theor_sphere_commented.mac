@@ -1,6 +1,6 @@
 
 c=30; //speed of light 30 cm/ns
-r = 17.5; // radius of sphere 25 cm
+r = 25.0; // radius of sphere 25 cm
 
 //usually this macro is used to compare theoretical RCS with calculated from measurements
 //since we collect our signal from oscilloscope, it is best to compare RCS with same frequency step and have

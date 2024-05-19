@@ -98,6 +98,7 @@ pause();
 
 w3=b;
 freqN=count(w3);
+n0 = 0*freqN;
 n1 = 0.1*freqN;
 n2 = 0.4*freqN;
 n3 = 0.5*freqN;
@@ -108,9 +109,13 @@ n3 = 0.5*freqN;
 w3=1;
 out(N);
 
-for(i=0;i<n1;i=i+1)
+for(i=0;i<n0;i=i+1)
 {
-	w3[i]=sqr(sqr(sin(i/n1*pi()/2)));
+	w3[i]=0;
+}
+for(i=n0;i<n1;i=i+1)
+{
+	w3[i]=sqr(sqr(sin((i - n0)/(n1 - n0)*pi()/2)));
 }
 upper = n3 - n2;
 	
