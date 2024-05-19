@@ -1,0 +1,48 @@
+
+N = 3;
+a = signal(1, N, false);
+b = signal(1, N, false);
+
+for (ia = 0; ia < N; ia = ia + 1)
+{
+	  a[ia] = ia + 1;
+	  b[ia] = ia + 1;
+}
+cconvResult = signal(1, N, false);
+(cconvResult) = cconv_r(a, b);
+
+// expect 13, 13, 10
+r1 = cconvResult;
+
+
+N = 4;
+a = signal(1, N, false);
+b = signal(1, N, false);
+
+for (ia = 0; ia < N; ia = ia + 1)
+{
+	  a[ia] = ia + 1;
+	  b[ia] = ia + 1;
+}
+cconvResult = signal(1, N, false);
+(cconvResult) = cconv_r(a, b);
+
+// expect 26, 28, 26, 20
+r2 = cconvResult;
+
+
+N = 3;
+c = signal(1, N, true);
+d = signal(1, N, true);
+
+for (ia = 0; ia < N; ia = ia + 1)
+{
+	  c[ia] = ia + 1 + j*(ia + 1);
+	  d[ia] = ia + 1 + j*(ia + 1);
+}
+cconvResult2 = signal(1, N, true);
+(cconvResult2) = cconv_c(c, d);
+
+// expect 0 + j*26, 0 + j*26, 0 + j*20
+r3 = real(cconvResult2);
+r4 = imag(cconvResult2);

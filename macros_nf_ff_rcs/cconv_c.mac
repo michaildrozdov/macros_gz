@@ -1,0 +1,26 @@
+(cconvResult) = cconv_r(a, b)
+{
+	  // count(a) has to be equal count(b)
+	  N = count(b);
+	  cconvResult = signal(1, N, true);
+	  breverse = signal(1, N, true);
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    breverse[ia] = b[N - 1 - ia];
+	  }
+	  
+	  tempSignal = breverse;
+	  for (ia = 0; ia < N; ia = ia + 1)
+	  {
+		    cconvResult[ia] = 0 ;
+		    
+		    // shift the reversed signal
+		    tempSignal[0] = breverse[N - 1];
+		    insert(breverse, 0, N - 2, tempSignal, 1);
+		    breverse = tempSignal;
+		    for (ka = 0; ka < N; ka = ka + 1)
+		    {
+			      cconvResult[ia] = cconvResult[ia] + a[ka] * breverse[ka];
+		    }
+	  }
+}

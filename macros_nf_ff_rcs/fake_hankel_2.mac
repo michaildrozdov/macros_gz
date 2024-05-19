@@ -1,0 +1,17 @@
+(H_2) = fake_hankel_2(order, argument)
+{
+	  upper_limit = 10;
+	  Tv = 1;
+	  for (n = 1; n <= upper_limit; n = n + 1)
+	  {
+		    some_sum = 0;
+		    for (nn = 1; nn <= n; nn = nn + 1)
+		    {
+			      some_sum = some_sum  * (4*order*order - (2*nn - 1)*(2*nn - 1));
+		    }
+		    Tv = Tv + some_sum / (factorial(n) * pow((4 * argument), n));
+	  }
+	  
+	  exp_argument = (order + 0.5) * pi()/2 - argument;
+	  H_2 = (cos(exp_argument) + j*sin(exp_argument)) * Tv / sqrt(pi() * argument / 2);
+}
