@@ -1,26 +1,43 @@
-// This macro calculates the NF-FF tranformation. Inputs are NF signal, background,
-// the distance to the target and the target under test largest dimansion. Also the 
-// signal, the background and a radius of the calibration spehere should be passed. The
-// transform (under usual conditions) requires that the NF measurement is completed
+// This macro calculates the NF-FF transformation. Inputs are NF signal, background,
+// the distance to the target and the target under test largest dimension. The
+// Transform (under usual conditions) requires that the NF measurement is completed
 // in the full [0; 2pi) range.
+// This example also compares the transform results to the FF measurement data, so
+// it needs FF signal, background and (optionally) distance additionally. This comparison
+// is not needed for the final application, it is a validation of the transform.
+
+clear_variables();
 
 //
 // Input parameters:
 //
-clear_variables();
+
 f = 5.0; // GHz, target frequency
 D = 0.235; // Size of object
-rho0 = 0.58; // m, measurement distance of NF
+rho0 = 0.53; // m, measurement distance of NF
 r = 3.0;// cm, calibration sphere radius
 nf_signal_path = "C:\matlab_workplace\cylindrical_nf_ff\Newest\Sig_7_58.sig";
 nf_background_path = "C:\matlab_workplace\cylindrical_nf_ff\Newest\Bcg_7_58.sig";
 sphere_signal_path = "C:\matlab_workplace\cylindrical_nf_ff\Newest\fake_sphere.sig";
 sphere_background_path = "C:\matlab_workplace\cylindrical_nf_ff\Newest\fake_sphere_bg.sig";
 
+nf_signal_path = "C:\matlab_workplace\cylindrical_nf_ff\validation\box_15_53.sig";
+nf_background_path = "C:\matlab_workplace\cylindrical_nf_ff\validation\bg_30_53.sig";
+sphere_signal_path = "C:\matlab_workplace\cylindrical_nf_ff\validation\sph_30_53.sig";
+sphere_background_path = "C:\matlab_workplace\cylindrical_nf_ff\validation\bg_30_53.sig";
+
 //
-// Output parameters:
+// Control parameters. These are not needed for the final usage, but rather for the sanity check.
 //
-NF_FF_RCS = signal(1, 360, false); // Already normalized RCS pattern in cm sq.
+shift_input = 0; // Sometimes the input is shifted (maximum is not at 0). This is not
+                      // important for the calculation, but since here it is compared to the
+                      // FF measurement, we want to shift it.
+ff_signal_path = "C:\matlab_workplace\cylindrical_nf_ff\Newest\Sig_8_192.sig";
+ff_background_path = "C:\matlab_workplace\cylindrical_nf_ff\Newest\Bcg_8_192.sig";
+ff_signal_path = "C:\matlab_workplace\cylindrical_nf_ff\validation\box_15_115.sig";
+ff_background_path = "C:\matlab_workplace\cylindrical_nf_ff\validation\bg_15_115.sig";
+rho_far = 1.15; // m, measurement distance of FF
+
 
 total_measurements = sig_get_count(nf_signal_path); // Should be 360 always
 test_signal = sig_read(nf_signal_path, 0);
@@ -33,7 +50,7 @@ kind = 2; // "kind" of Hankel function to use
 index_in_z = floor(f * T + 1);
 out(index_in_z);
 
-// Sphere RCS caalculation for the input frequency
+// Sphere RCS calculation for the input frequency
 eps = 0.000001;
 srcs = 0 + 0*j();
 f1 =1*j();
@@ -59,16 +76,27 @@ while (del2>eps)
 
 teorSphereRcs=mag(srcs*srcs*pi()*r*r); // cm^2
 
+out(teorSphereRcs);
+
 phis = signal(1, 360, false);
 for (ia = 0; ia < 360; ia = ia + 1)
 {
 	  phis[ia] = ia * pi() / 180;
 }
 
+r1 = phis;
+
+mt_near = matrix(360,N);
+mt_far = matrix(360,N);
+
 pattern_near = signal(1, 360, true); // E from the paper
-pattern_near = 0;
+diff_near = signal(1, 512, true); // U from the paper, Number of points set to the nearest power of 2
+pattern_far = signal(1, 360, true);
 pattern_sphere = signal(1, 360, true);
-pattern_sphere = 0;
+
+pattern_near = 0;
+diff_near = 0;
+pattern_far = 0;
 
 out(N, total_measurements);
 
@@ -76,11 +104,36 @@ sphere_td = sig_read(sphere_signal_path, 0) - sig_read(sphere_background_path, 0
 sphere_fd = fft(sphere_td);
 for (ia = 0; ia < total_measurements; ia = ia + 1)
 {
-	  near_td = sig_read(nf_signal_path, ia) - sig_read(nf_background_path, ia);
+	  near_td = sig_read(nf_signal_path, ia) - sig_read(nf_background_path, ia) ;
+	  set_matrix_row(mt_near, ia, near_td);
+
+	  far_td = sig_read(ff_signal_path, ia) - sig_read(ff_background_path, ia) ;
+	  set_matrix_row(mt_far, ia, far_td);
+		    
 	  near_fd = fft(near_td);
+	  far_fd = fft(far_td);
 	  pattern_near[ia] = near_fd[index_in_z];
+	  diff_near_fd = differ(real(near_fd)) + j*differ(imag(near_fd));
+	  diff_near[ia] = diff_near_fd[index_in_z];
+	  pattern_far[ia] = far_fd[index_in_z];
+    
 	  pattern_sphere[ia] = sphere_fd[index_in_z];
 }
+
+
+// Fill with last value to avoid sudden changes while doing the convolution
+for (ia = total_measurements; ia < 512; ia = ia + 1)
+{
+	  diff_near[ia] = diff_near[total_measurements - 1];
+}
+
+out(mt_near);
+//draw(mt_near);
+//pause();
+//draw(mt_far);
+
+r2 = mag(pattern_near);
+r3 = mag(diff_near);
 
 max_order = floor(2 * k * D);
 out(max_order);
@@ -89,6 +142,7 @@ argument = 2 * k * rho0; // This is the argument for Hankel function in (11)
 // Precompute Hankel function results
 hankel_array = signal(1, max_order*2 + 1, true);
 j_powers = signal(1, max_order*2 + 1, true);
+
 
 // Variables for Hankel function calculation
 scaling = 1; //1 - no scaling, 2 - do scale
@@ -131,6 +185,11 @@ for (order = -max_order; order <= max_order; order = order + 1)
 	  }
 }
 
+r4 = real(j_powers);
+r5 = imag(j_powers);
+r6 = mag(j_powers);
+
+
 // Precompute Vphy term
 Vphi = signal(1, 360, true); 
 Vphi = 0;
@@ -146,18 +205,21 @@ for (phi_index = 0; phi_index < 360; phi_index = phi_index + 1)
         }
 }
 
-NF_FF_data_non_norm = signal(1, 360, true);
+NF_FF_data = signal(1, 360, true);
 sphere_renormalized = signal(1, 360, true);
+
 // Instead of the function below ifft(fft(Vphi)*conj(fft(pattern_near))) should produce same result.
 // In macroprocessor we can't perform FFT on a complex signal and the result is not symmetric
 // like it is assumed, so we can't drop negative frequencies after the FFT. Also, we should not do
 // the zero-padding to the nearest power of 2 as the circular convolution then becomes a linear one
 // with enough zeros added. With padding from 360 to 512 we will get something inbetween.
-(NF_FF_data_non_norm) = cconv_c(Vphi, pattern_near);
+(NF_FF_data) = cconv_c(Vphi, pattern_near);
 (sphere_renormalized) = cconv_c(Vphi, pattern_sphere);
 
-NF_FF_RCS = teorSphereRcs*sqr(divi(mag(NF_FF_data_non_norm), mag(sphere_renormalized)));
+// Now we compare with the far field
+r9 = db(mag(NF_FF_data));
+r10 = db(mag(pattern_far));
 
-// Uncomment to see the output
-//r9 = NF_FF_RCS;
+// RCS pattern
+r11 = teorSphereRcs*sqr(divi(mag(NF_FF_data), mag(sphere_renormalized)));
 
