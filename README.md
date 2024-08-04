@@ -1,1 +1,2 @@
-macros_gz
+The repo contains various macros writtent for the internal "macroprocessor" language.
+The syntax is somewhat similar to C, but many features are missing. For example there are no 'break' and 'continue' keywords and the macro can only have a single level of 'subprograms'. These limitations force to use 'goto' statements.
