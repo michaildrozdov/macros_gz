@@ -1,0 +1,248 @@
+// This subprogram finds the left and right maximas so that total count of maximas
+// would be equal to 'maximas'. Absolute maxima must lie between the output positions.
+// Absolute maxima must lie between the output positions. The search area of sig signal
+// starting from search_start (relative position 0.0-1.0) and finishing at search_end
+// (relative position 0.0-1.0). Pass search_start=0.0 and search_end=1.0 to look in the
+// entire signal.
+//
+// When the initial positions are found, the subprogram tries to find any alternative
+// pulse to the left of the found one. The maximum has to be above high_threshold
+// (relative 0.0 -1.0). The alternative maxima is treated as a separate pulse only if
+// there was a region between it and the initial pulse, where all values are below
+// low_threshold (relative 0.0 - 1.0).
+//
+// Subprogram outputs positions of two maximas in pos1, pos2 (pos1 < pos2).
+// Depending on the method pos1 and pos2 are either of equal distance from the
+// absolute maxima ('method' == 1) or contain largest possible maximas ('method' == 2).
+(error) = gate_maximas_ex(sig, search_start, search_end, low_threshold, high_threshold, pos1, pos2, maximas, method)
+{
+	  error = 0;
+	  pos1 = 0;
+	  pos2 = 0;
+	  
+	  if (search_start >= 0.0 and search_end >= 0.0 and search_end <= 1.0 and search_end > search_start)
+	  {
+		    n = count(sig);
+		    start_n = floor(n * search_start);
+		    end_n = floor(n * search_end);
+		    
+		    sub_n = end_n - start_n + 1;
+		    
+		    subsignal = signal(10, sub_n, false); // Window is not important
+		    insert(sig, start_n, end_n, subsignal, 0);
+		    maxpos = 0;
+		    maxval = max(subsignal, maxpos);
+		    pos1 = start_n + maxpos;
+		    pos2 = pos1;
+		    
+		    // Common errors
+		    if (maxval < 0)
+		    {
+			      error = 2; // Unexpected signal shape
+			      goto finish_alt;
+		    }
+		    if ((maxpos > sub_n - 2) or (maxpos < 2))
+		    {
+			     error = 3; // To close to the edge
+			     goto finish_alt; 
+		    }
+		    
+		    passed_negative_left = false;
+		    maxval_left = 0.0;
+		    pulse_duration = 0;
+		    for (ia = maxpos; ia > 1; ia = ia - 1)
+		    {
+			      if (subsignal[ia] < 0)
+			      {
+					passed_negative_left = true;
+			      }
+			      
+			      sample4 = subsignal[ia + 2];
+			      sample3 = subsignal[ia + 1];
+			      sample2 = subsignal[ia];
+			      sample1 = subsignal[ia - 1];
+			      sample0 = subsignal[ia - 2];
+			      
+			      if (passed_negative_left and sample4 <= sample3 and sample3 <= sample2 and sample2 >= sample1 and sample1 >= sample0)
+			      {
+					pulse_duration = maxpos - ia;
+					goto pulse_length_found;
+			      }
+		    }
+
+pulse_length_found:
+		    // Looking for the pulse before the maximum one as an alternative.
+		    // This is done by first detecting if there is a region below the low threshold
+		    // and then by detecting if there is a region above the high threshold.
+		    matching_free_area_found_at = -1;
+		    last_alternative_pulse_found_at = -1;
+		    last_pulse_free_area_found_at = -1;
+		    
+		    absolute_high_threshold = high_threshold * maxval;
+		    absolute_low_threshold = low_threshold * maxval;
+		    
+		    
+		    half_duration = floor(pulse_duration / 2);
+		    
+		    //print_line("Starting alternative pulse search.");
+		    
+		    short_signal = signal(10, pulse_duration, false);
+		    for (ia = maxpos - pulse_duration; ia >= 0; ia = ia - half_duration)
+		    {
+			      insert(subsignal, ia, ia + pulse_duration - 1, short_signal, 0);
+			      temp = 0;
+			      value = max(short_signal, temp);
+			      //print_line("At ", ia, " value is ", value);
+			      if (last_pulse_free_area_found_at > 0 and value > absolute_high_threshold)
+			      {
+					last_alternative_pulse_found_at = ia + temp;
+					matching_free_area_found_at = last_pulse_free_area_found_at;
+					last_pulse_free_area_found_at = -1;
+					
+					//print_line("Alternative maximum found at ", last_alternative_pulse_found_at, " (matching pulse-free area ", matching_free_area_found_at, ")");
+					goto next_iteration;
+			      }
+			      if (value < absolute_low_threshold)
+			      {
+					last_pulse_free_area_found_at = ia + temp;
+					//print_line("Free area found at ", last_pulse_free_area_found_at, ", value ", value, ", threshold ", absolute_low_threshold);
+			      }
+next_iteration:
+		    }
+		    
+		    if (last_alternative_pulse_found_at > 0 and matching_free_area_found_at > 0)
+		    {
+			      subsubsignal = signal(10, sub_n, false); // Can be same length as subsignal
+											      // Will be filled with zeros outside the
+											      // usefull region.
+			      subsubsignal = 0;
+			      //print_line("matching_free_area_found_at is ", matching_free_area_found_at);
+			      insert(subsignal, 0, matching_free_area_found_at, subsubsignal, 0);
+			      
+			      maxpos_alternative = 0;
+			      maxval_alternative = max(subsubsignal, maxpos);
+			      pos1 = start_n + maxpos;
+			      pos2 = pos1;
+			      
+			      // Common errors
+			      if (maxpos < 2)
+			      {
+				       error = 5; // To close to the edge (alternative)
+				       goto finish_alt; 
+			      }
+		    }
+		    
+		    maximas_found = 1;
+		    maxpos_left = maxpos;
+		    maxpos_right = maxpos;
+		    
+		    while(maximas_found < maximas)
+		    {
+			      left_start = maxpos_left;
+			      right_start = maxpos_right;
+		    
+			      // Find next maximum to the left. Sampling 5 points. This may fail if the signal is noisy.
+			      passed_negative_left = false;
+			      maxpos_left = maxpos;
+			      maxval_left = 0.0;
+			      for (ia = left_start; ia > 1; ia = ia - 1)
+			      {
+					if (subsignal[ia] < 0)
+					{
+						  passed_negative_left = true;
+					}
+					
+					sample4 = subsignal[ia + 2];
+					sample3 = subsignal[ia + 1];
+					sample2 = subsignal[ia];
+					sample1 = subsignal[ia - 1];
+					sample0 = subsignal[ia - 2];
+					
+					if (passed_negative_left and sample4 <= sample3 and sample3 <= sample2 and sample2 >= sample1 and sample1 >= sample0)
+					{
+						  maxpos_left = ia;
+						  maxval_left = sample2;
+						  goto break_early_one2;
+					}
+			      }
+break_early_one2:
+
+			      // Find next maximum to the right. Sampling 5 points. This may fail if the signal is noisy.
+			      passed_negative_right = false;
+			      maxpos_right = maxpos;
+			      maxval_right = 0.0;
+			      for (ia = right_start; ia < sub_n - 2; ia = ia + 1)
+			      {
+					if (subsignal[ia] < 0)
+					{
+						  passed_negative_right = true;
+					}
+					
+					sample4 = subsignal[ia + 2];
+					sample3 = subsignal[ia + 1];
+					sample2 = subsignal[ia];
+					sample1 = subsignal[ia - 1];
+					sample0 = subsignal[ia - 2];
+					
+					if (passed_negative_right and sample4 <= sample3 and sample3 <= sample2 and sample2 >= sample1 and sample1 >= sample0)
+					{
+						  maxpos_right = ia;
+						  maxval_right = sample2;
+						  goto break_early_two2;
+					}
+			      }
+break_early_two2:
+
+			      if (passed_negative_left and maxval_left > maxval_right)
+			      {
+					pos1 = start_n + maxpos_left;
+					maximas_found = maximas_found + 1;
+					
+					if (maximas_found < maximas and method == 1)
+					{
+						  //print_line("Currently at ", maximas_found, " maximas. Will add the other one (r).");
+						  // Can also add the smaller one and continue
+						  pos2 = start_n + maxpos_right;
+						  maximas_found = maximas_found + 1;
+					}
+					else
+					{
+						  //print_line("Method 2 is used, so the right maxima is not used.");
+						  maxpos_right = right_start;
+					}
+					goto next_alt;
+			      }
+			      
+			      if (passed_negative_right and maxval_left < maxval_right)
+			      {
+					pos2 = start_n + maxpos_right;
+					maximas_found = maximas_found + 1;
+					
+					if (maximas_found < maximas and method == 1)
+					{
+						  //print_line("Currently at ", maximas_found, " maximas. Will add the other one (l).");
+						  // Can also add the smaller one and continue
+						  pos1 = start_n + maxpos_left;
+						  maximas_found = maximas_found + 1;
+					}
+					else
+					{
+						  //print_line("Method 2 is used, so the left maxima is not used.");
+						  maxpos_left = left_start;
+					}
+					goto next_alt;
+			      }
+			      
+			      error = 4; // Unexpected error
+			      goto finish_alt;
+next_alt:
+		    }
+	  }
+	  else
+	  {
+		    error = 1;
+		    goto finish_alt;
+	  }
+finish_alt:
+	  
+}
